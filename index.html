@@ -269,7 +269,7 @@
         <!-- 相手の属性：隠し値 -->
         <input type="hidden" id="opponentTypeInput">
         <div class="type-picker">
-          <div class="type-preview" onclick="toggleTypePanel('opp')">
+          <div id="oppTypePreview" class="type-preview" onclick="toggleTypePanel('opp')">
             <span>タップして属性を選択</span>
           </div>
           <div id="oppTypePanel" class="type-panel">
@@ -471,6 +471,7 @@
       document.getElementById("selfTypePanel").classList.remove("open");
     } else {
       document.getElementById("opponentTypeInput").value = type;
+      updateOpponentPreview();
       document.getElementById("oppTypePanel").classList.remove("open");
     }
   }
@@ -486,6 +487,28 @@
       container.appendChild(span);
       return;
     }
+    const src = typeIconSrc(t);
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.className = "type-icon";
+      container.appendChild(img);
+    }
+  }
+
+  function updateOpponentPreview() {
+    const t = document.getElementById("opponentTypeInput").value;
+    const container = document.getElementById("oppTypePreview");
+    container.innerHTML = "";
+
+    if (!t) {
+      const span = document.createElement("span");
+      span.textContent = "タップして属性を選択";
+      container.appendChild(span);
+      return;
+    }
+
     const src = typeIconSrc(t);
     if (src) {
       const img = document.createElement("img");
@@ -621,6 +644,7 @@
     document.getElementById("orderInput").value = "first";
     document.getElementById("memoInput").value = "";
     updateSelfPreview();
+    updateOpponentPreview();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
   }
@@ -762,6 +786,7 @@
     const dateInput = document.getElementById("dateInput");
     if (dateInput) dateInput.value = today;
     updateSelfPreview();
+    updateOpponentPreview();
     render();
   });
 </script>
