@@ -153,6 +153,14 @@
       margin-left: 2px;
       vertical-align: middle;
     }
+    .type-preview {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      min-height: 22px;
+    }
   </style>
 </head>
 <body>
@@ -181,7 +189,7 @@
     <div class="row">
       <div>
         <label>属性</label>
-        <select id="typeInput">
+        <select id="typeInput" onchange="updateTypePreview()">
           <option value="">（なし）</option>
           <option value="fire">炎</option>
           <option value="water">水</option>
@@ -193,6 +201,7 @@
           <option value="metal">鋼</option>
           <option value="colorless">無色</option>
         </select>
+        <div id="typePreview" class="type-preview"></div>
       </div>
       <div>
         <label>結果</label>
@@ -348,6 +357,32 @@
     return "icons/" + t + ".png";  // icons/fire.png など
   }
 
+  // ------------ 属性プレビュー ------------
+  function updateTypePreview() {
+    const t = document.getElementById("typeInput").value;
+    const container = document.getElementById("typePreview");
+    container.innerHTML = "";
+
+    if (!t) {
+      container.textContent = "アイコンなし";
+      return;
+    }
+
+    const src = typeIconSrc(t);
+    const label = typeLabel(t);
+
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = label;
+      img.className = "type-icon";
+      container.appendChild(img);
+    }
+    const span = document.createElement("span");
+    span.textContent = label;
+    container.appendChild(span);
+  }
+
   // ------------ 追加 ------------
   function addRecord() {
     const date = document.getElementById("dateInput").value;
@@ -389,6 +424,7 @@
     document.getElementById("resultInput").value = "win";
     document.getElementById("orderInput").value = "first";
     document.getElementById("memoInput").value = "";
+    updateTypePreview();
   }
 
   function deleteRecord(id) {
