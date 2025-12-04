@@ -365,6 +365,9 @@
     <h2>スランプグラフ</h2>
     <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）</small>
     <canvas id="slumpCanvas"></canvas>
+    <small id="slumpInfo" class="muted"></small><br>
+    <small id="streakMax" class="muted"></small><br>
+    <small id="streakCurrent" class="muted"></small>
   </section>
 
   <!-- 対戦一覧 -->
@@ -539,8 +542,43 @@
     return points;
   }
 
+  // 連勝・連敗計算
+  function calcStreaks() {
+    let maxWin = 0;
+    let maxLose = 0;
+    let curWin = 0;
+    let curLose = 0;
+
+    records
+      .slice()
+      .sort((a,b) => {
+        const ad = a.date || "";
+        const bd = b.date || "";
+        if (ad < bd) return -1;
+        if (ad > bd) return 1;
+        return 0;
+      })
+      .forEach(r => {
+        if (r.result === "win") {
+          curWin++;
+          curLose = 0;
+          if (curWin > maxWin) maxWin = curWin;
+        } else if (r.result === "lose") {
+          curLose++;
+          curWin = 0;
+          if (curLose > maxLose) maxLose = curLose;
+        } else {
+          curWin = 0;
+          curLose = 0;
+        }
+      });
+
+    return { maxWin, maxLose, curWin, curLose };
+  }
+
   function renderSlumpGraph() {
     const canvas = document.getElementById("slumpCanvas");
+    const info = document.getElementById("slumpInfo");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
@@ -553,11 +591,35 @@
     ctx.clearRect(0, 0, width, height);
 
     const points = calcSlumpPoints();
-    if (points.length === 0) {
+
+    // 連勝・連敗表示
+    const st = calcStreaks();
+    const maxW = st.maxWin;
+    const maxL = st.maxLose;
+    const nowW = st.curWin;
+    const nowL = st.curLose;
+
+    const streakMaxEl = document.getElementById("streakMax");
+    const streakCurrentEl = document.getElementById("streakCurrent");
+
+    if (streakMaxEl) {
+      streakMaxEl.textContent = `最高連勝：${maxW}連勝　｜　最高連敗：${maxL}連敗`;
+    }
+    if (streakCurrentEl) {
+      streakCurrentEl.textContent = `現在の連勝：${nowW}連勝　｜　現在の連敗：${nowL}連敗`;
+    }
+
+    // スランプ情報ラベル
+    if (!points.length) {
+      if (info) info.textContent = "まだデータがありません";
       ctx.fillStyle = "#9ca3af";
       ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillText("まだデータがありません", 10, height / 2);
       return;
+    } else {
+      const last = points[points.length - 1];
+      const sign = last > 0 ? "+" : "";
+      if (info) info.textContent = `現在の累計：${sign}${last}`;
     }
 
     const maxVal = Math.max(...points, 0);
@@ -568,35 +630,67 @@
     const usableW = width - padding * 2;
     const usableH = height - padding * 2;
 
-    const zeroY = padding + usableH * (maxVal / range);
+    // 背景
+    ctx.fillStyle = "#f9fafb";
+    ctx.fillRect(padding, padding, usableW, usableH);
+
+    // 横グリッド（4本）
     ctx.strokeStyle = "#e5e7eb";
     ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    const gridCount = 4;
+    for (let i = 0; i <= gridCount; i++) {
+      const y = padding + (usableH * i) / gridCount;
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // 0ライン（太め）
+    const zeroY = padding + usableH * (maxVal / range);
+    ctx.strokeStyle = "#9ca3af";
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(padding, zeroY);
     ctx.lineTo(width - padding, zeroY);
     ctx.stroke();
 
-    ctx.strokeStyle = "#2563eb";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((v, i) => {
-      const ratio = (points.length === 1) ? 0.5 : i / (points.length - 1);
+    // 座標変換
+    function pointToXY(idx, v) {
+      const ratio = points.length === 1 ? 0.5 : idx / (points.length - 1);
       const x = padding + usableW * ratio;
       const y = padding + usableH * ((maxVal - v) / range);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+      return { x, y };
+    }
 
-    ctx.fillStyle = "#2563eb";
-    points.forEach((v, i) => {
-      const ratio = (points.length === 1) ? 0.5 : i / (points.length - 1);
-      const x = padding + usableW * ratio;
-      const y = padding + usableH * ((maxVal - v) / range);
+    // 線（区間ごとに色変え）
+    ctx.lineWidth = 2;
+    for (let i = 1; i < points.length; i++) {
+      const v1 = points[i - 1];
+      const v2 = points[i];
+      const { x: x1, y: y1 } = pointToXY(i - 1, v1);
+      const { x: x2, y: y2 } = pointToXY(i, v2);
+      const avg = (v1 + v2) / 2;
+      ctx.strokeStyle = avg >= 0 ? "#2563eb" : "#dc2626";
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    // 点
+    for (let i = 0; i < points.length; i++) {
+      const v = points[i];
+      const { x, y } = pointToXY(i, v);
+      const color = v >= 0 ? "#2563eb" : "#dc2626";
+      ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
-    });
+    }
   }
 
   // ------------ 追加 ------------
