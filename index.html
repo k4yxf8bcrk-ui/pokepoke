@@ -44,7 +44,6 @@
     }
     input[type="text"],
     input[type="date"],
-    select,
     textarea {
       width: 100%;
       box-sizing: border-box;
@@ -152,6 +151,46 @@
       display: flex;
       align-items: center;
       min-height: 22px;
+      cursor: pointer;
+    }
+    .type-preview span {
+      margin-left: 4px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .type-picker {
+      position: relative;
+      margin-top: 2px;
+    }
+    .type-panel {
+      position: relative;
+      margin-top: 4px;
+      padding: 6px;
+      border-radius: 10px;
+      background: #f3f4ff;
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .type-panel.open {
+      display: flex;
+    }
+    .type-btn {
+      border-radius: 999px;
+      padding: 4px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+    .type-btn img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
     }
     canvas {
       width: 100%;
@@ -186,41 +225,90 @@
     <div class="row">
       <div>
         <label>自分の属性</label>
-        <select id="typeInput" onchange="updateTypePreview()">
-          <option value="">（なし）</option>
-          <option value="fire">炎</option>
-          <option value="water">水</option>
-          <option value="grass">草</option>
-          <option value="lightning">雷</option>
-          <option value="psychic">超</option>
-          <option value="darkness">悪</option>
-          <option value="fighting">闘</option>
-          <option value="metal">鋼</option>
-          <option value="colorless">無色</option>
-        </select>
-        <div id="typePreview" class="type-preview"></div>
+        <!-- 自分の属性：隠し値 -->
+        <input type="hidden" id="typeInput">
+        <div class="type-picker">
+          <div id="selfTypePreview" class="type-preview" onclick="toggleTypePanel('self')">
+            <span>タップして属性を選択</span>
+          </div>
+          <div id="selfTypePanel" class="type-panel">
+            <!-- 公式順：炎,水,草,雷,超,悪,闘,鋼,無色 -->
+            <button type="button" class="type-btn" onclick="selectType('self','fire')">
+              <img src="icons/fire.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','water')">
+              <img src="icons/water.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','grass')">
+              <img src="icons/grass.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','lightning')">
+              <img src="icons/lightning.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','psychic')">
+              <img src="icons/psychic.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','darkness')">
+              <img src="icons/darkness.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','fighting')">
+              <img src="icons/fighting.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','metal')">
+              <img src="icons/metal.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','colorless')">
+              <img src="icons/colorless.png" alt="">
+            </button>
+          </div>
+        </div>
       </div>
+
       <div>
         <label>相手の属性</label>
-        <select id="opponentTypeInput">
-          <option value="">（なし）</option>
-          <option value="fire">炎</option>
-          <option value="water">水</option>
-          <option value="grass">草</option>
-          <option value="lightning">雷</option>
-          <option value="psychic">超</option>
-          <option value="darkness">悪</option>
-          <option value="fighting">闘</option>
-          <option value="metal">鋼</option>
-          <option value="colorless">無色</option>
-        </select>
+        <!-- 相手の属性：隠し値 -->
+        <input type="hidden" id="opponentTypeInput">
+        <div class="type-picker">
+          <div class="type-preview" onclick="toggleTypePanel('opp')">
+            <span>タップして属性を選択</span>
+          </div>
+          <div id="oppTypePanel" class="type-panel">
+            <button type="button" class="type-btn" onclick="selectType('opp','fire')">
+              <img src="icons/fire.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','water')">
+              <img src="icons/water.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','grass')">
+              <img src="icons/grass.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','lightning')">
+              <img src="icons/lightning.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','psychic')">
+              <img src="icons/psychic.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','darkness')">
+              <img src="icons/darkness.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','fighting')">
+              <img src="icons/fighting.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','metal')">
+              <img src="icons/metal.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','colorless')">
+              <img src="icons/colorless.png" alt="">
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="row">
       <div>
         <label>結果</label>
-        <select id="resultInput">
+        <select id="resultInput" style="width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:13px;">
           <option value="win">勝ち</option>
           <option value="lose">負け</option>
           <option value="draw">引き分け</option>
@@ -228,7 +316,7 @@
       </div>
       <div>
         <label>先攻 / 後攻</label>
-        <select id="orderInput">
+        <select id="orderInput" style="width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:13px;">
           <option value="first">先攻</option>
           <option value="second">後攻</option>
         </select>
@@ -361,17 +449,43 @@
     return "icons/" + t + ".png";
   }
 
-  // ------------ 属性プレビュー（自分） ------------
-  function updateTypePreview() {
+  // ------------ アイコンパネル制御 ------------
+  function toggleTypePanel(who) {
+    const selfPanel = document.getElementById("selfTypePanel");
+    const oppPanel = document.getElementById("oppTypePanel");
+    if (who === "self") {
+      const open = !selfPanel.classList.contains("open");
+      selfPanel.classList.toggle("open", open);
+      oppPanel.classList.remove("open");
+    } else {
+      const open = !oppPanel.classList.contains("open");
+      oppPanel.classList.toggle("open", open);
+      selfPanel.classList.remove("open");
+    }
+  }
+
+  function selectType(who, type) {
+    if (who === "self") {
+      document.getElementById("typeInput").value = type;
+      updateSelfPreview();
+      document.getElementById("selfTypePanel").classList.remove("open");
+    } else {
+      document.getElementById("opponentTypeInput").value = type;
+      document.getElementById("oppTypePanel").classList.remove("open");
+    }
+  }
+
+  function updateSelfPreview() {
     const t = document.getElementById("typeInput").value;
-    const container = document.getElementById("typePreview");
+    const container = document.getElementById("selfTypePreview");
     container.innerHTML = "";
 
     if (!t) {
-      container.textContent = "アイコンなし";
+      const span = document.createElement("span");
+      span.textContent = "タップして属性を選択";
+      container.appendChild(span);
       return;
     }
-
     const src = typeIconSrc(t);
     if (src) {
       const img = document.createElement("img");
@@ -506,7 +620,9 @@
     document.getElementById("resultInput").value = "win";
     document.getElementById("orderInput").value = "first";
     document.getElementById("memoInput").value = "";
-    updateTypePreview();
+    updateSelfPreview();
+    document.getElementById("selfTypePanel").classList.remove("open");
+    document.getElementById("oppTypePanel").classList.remove("open");
   }
 
   function deleteRecord(id) {
@@ -642,7 +758,10 @@
   // 初期化
   loadData();
   window.addEventListener("load", () => {
-    clearForm();
+    const today = new Date().toISOString().slice(0,10);
+    const dateInput = document.getElementById("dateInput");
+    if (dateInput) dateInput.value = today;
+    updateSelfPreview();
     render();
   });
 </script>
