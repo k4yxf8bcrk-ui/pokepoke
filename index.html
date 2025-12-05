@@ -446,10 +446,19 @@
   <!-- 対戦一覧 -->
   <section class="card">
     <h2>対戦履歴</h2>
+
+    <!-- 🔹ここが変更ポイント：3ボタン追加＋input追加 -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <small id="countText">0件</small>
-      <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
+      <div style="display:flex; gap:4px;">
+        <button class="btn-sub" type="button" onclick="exportBackup()" style="font-size:11px;">バックアップ</button>
+        <button class="btn-sub" type="button" onclick="triggerImport()" style="font-size:11px;">復元</button>
+        <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
+      </div>
     </div>
+    <!-- 復元用ファイル選択（非表示） -->
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(event)">
+
     <div style="overflow-x:auto;">
       <table id="recordsTable">
         <thead>
@@ -816,7 +825,6 @@
       ctx.fillText(String(i+1), x-3, height-5);
     }
 
-    // 左に累計ポイントの数値目盛り
     const minY = Math.floor(minVal);
     const maxY = Math.ceil(maxVal);
     for (let v=minY; v<=maxY; v++){
@@ -1244,6 +1252,63 @@
     setRateColor("firstRateText", fRate, fTotal>0);
     setRateColor("secondRateText", sRate, sTotal>0);
   }
+
+  // ------------ バックアップ / 復元 ここから ------------
+  function exportBackup() {
+    if (!records.length) {
+      alert("まだバックアップするデータがありません。");
+      return;
+    }
+    const data = JSON.stringify(records, null, 2);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = ("0" + (now.getMonth() + 1)).slice(-2);
+    const d = ("0" + now.getDate()).slice(-2);
+
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pokepoke_backup_${y}${m}${d}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerImport() {
+    const input = document.getElementById("importFile");
+    if (input) input.click();
+  }
+
+  function importBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (!Array.isArray(json)) {
+          alert("バックアップデータの形式が違います。");
+          return;
+        }
+        if (!confirm("現在のデータを上書きして復元しますか？")) {
+          return;
+        }
+        records = json;
+        saveData();
+        render();
+        alert("復元が完了しました。");
+      } catch (err) {
+        console.error(err);
+        alert("バックアップファイルの読み込みに失敗しました。");
+      }
+    };
+    reader.readAsText(file, "utf-8");
+  }
+  // ------------ バックアップ / 復元 ここまで ------------
 
   function render() {
     renderTable();
