@@ -96,6 +96,13 @@
     th {
       background: #f3f4f6;
     }
+
+    /* 結果列（勝ち／先攻）の中央揃え */
+    #recordsTable th:nth-child(4),
+    #recordsTable td:nth-child(4) {
+      text-align: center;
+    }
+
     .tag-win {
       color: #1d4ed8;
       font-weight: bold;
@@ -841,7 +848,6 @@
       ctx.fillText(String(i+1), x-3, height-5);
     }
 
-    // 左に累計ポイントの数値目盛り
     const minY = Math.floor(minVal);
     const maxY2 = Math.ceil(maxVal);
     for (let v=minY; v<=maxY2; v++){
@@ -943,6 +949,7 @@
     });
   }
 
+  // ★ デッキ名は空でもOKに変更
   function addRecord() {
     const date = document.getElementById("dateInput").value;
     const myDeck = document.getElementById("myDeckInput").value.trim();
@@ -952,11 +959,6 @@
     const result = document.getElementById("resultInput").value;
     const order = document.getElementById("orderInput").value;
     const memo = document.getElementById("memoInput").value.trim();
-
-    if (!myDeck) {
-      alert("自分のデッキ名を入力してください。");
-      return;
-    }
 
     if (editingId !== null) {
       const idx = records.findIndex(r=>r.id===editingId);
@@ -1068,6 +1070,7 @@
       tdOpp.appendChild(spanOpp);
 
       const tdRes=document.createElement("td");
+      tdRes.style.textAlign = "center";
       const spanR=document.createElement("div");
       spanR.textContent = resultLabel(rec.result);
       spanR.className = resultClass(rec.result);
@@ -1124,7 +1127,7 @@
 
     const stats={};
     records.forEach(r=>{
-      const key=r.myDeck||"（名称未入力）";
+      const key=(r.myDeck && r.myDeck.trim()) ? r.myDeck.trim() : "（名称未入力）";
       if (!stats[key]) stats[key]={win:0,lose:0,draw:0,total:0};
       stats[key].total++;
       if (r.result==="win") stats[key].win++;
@@ -1263,7 +1266,6 @@
     setRateColor("secondRateText", sRate, sTotal>0);
   }
 
-  // 自分の属性 使用率 円グラフ（ポケモンTV風カラー）
   function renderMyTypePie() {
     const canvas = document.getElementById("myTypePie");
     const legend = document.getElementById("myTypeLegend");
@@ -1276,7 +1278,6 @@
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // 属性集計
     const countMap = {};
     TYPE_KEYS.forEach(k => countMap[k] = 0);
     records.forEach(r => {
@@ -1309,15 +1310,15 @@
     const innerRadius = 45;
 
     const colors = {
-      fire:      "#EF4444", // 赤
-      water:     "#3B82F6", // 青
-      grass:     "#10B981", // 緑
-      lightning: "#FACC15", // 黄
-      psychic:   "#A855F7", // 紫
-      darkness:  "#111827", // ほぼ黒
-      fighting:  "#F97316", // オレンジ
-      metal:     "#6B7280", // グレー
-      colorless: "#D1D5DB"  // 薄グレー
+      fire:      "#EF4444",
+      water:     "#3B82F6",
+      grass:     "#10B981",
+      lightning: "#FACC15",
+      psychic:   "#A855F7",
+      darkness:  "#111827",
+      fighting:  "#F97316",
+      metal:     "#6B7280",
+      colorless: "#D1D5DB"
     };
 
     let startAngle = -Math.PI/2;
@@ -1336,21 +1337,18 @@
       startAngle = endAngle;
     });
 
-    // 内側くり抜き
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
     ctx.arc(centerX, centerY, innerRadius, 0, Math.PI*2);
     ctx.fill();
     ctx.globalCompositeOperation = "source-over";
 
-    // 中央に合計
     ctx.fillStyle = "#374151";
     ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(`${total}戦`, centerX, centerY);
 
-    // 凡例
     legend.innerHTML = "";
     types.forEach((t, idx) => {
       const value = values[idx];
@@ -1385,7 +1383,6 @@
     });
   }
 
-  // AIデッキ予想
   function renderAIDeckSuggestion() {
     const el = document.getElementById("aiDeckMessage");
     if (!el) return;
@@ -1398,7 +1395,7 @@
 
     const stats = {};
     records.forEach(r => {
-      const key = r.myDeck && r.myDeck.trim() ? r.myDeck.trim() : "（名称未入力）";
+      const key = (r.myDeck && r.myDeck.trim()) ? r.myDeck.trim() : "（名称未入力）";
       if (!stats[key]) stats[key] = {win:0, lose:0, draw:0, total:0};
       stats[key].total++;
       if (r.result === "win") stats[key].win++;
@@ -1413,7 +1410,7 @@
     Object.keys(stats).forEach(name => {
       const s = stats[name];
       const battle = s.win + s.lose;
-      if (battle < 5) return; // 5戦未満はサンプル不足として除外
+      if (battle < 5) return;
       const rate = battle === 0 ? 0 : s.win / battle * 100;
       if (rate > bestRate || (rate === bestRate && battle > bestTotal)) {
         bestRate = rate;
@@ -1442,7 +1439,6 @@
     }
   }
 
-  // バックアップ（JSONファイル保存）
   function backupData() {
     if (!records.length) {
       alert("バックアップするデータがありません。");
@@ -1468,7 +1464,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // 復元（JSONファイル読み込み）
   function restoreData() {
     const input = document.createElement("input");
     input.type = "file";
