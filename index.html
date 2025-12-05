@@ -91,6 +91,7 @@
       border-bottom: 1px solid #e5e7eb;
       padding: 4px 6px;
       text-align: left;
+      vertical-align: middle;   /* 行の中央に揃える */
     }
     th {
       background: #f3f4f6;
@@ -225,18 +226,17 @@
     #deckStatsTable td {
       font-size: 12px;
     }
-
-    /* ★ デッキ名＋カード画像用（ズレ修正） */
+    /* 自分のデッキセルの揃え用 */
     .deck-cell {
       display: flex;
-      align-items: center;    /* 縦位置を中央揃え */
-      gap: 4px;
+      align-items: center;
+      gap: 6px;
     }
-    .deck-cell .card-thumb {
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      object-fit: cover;
+    .deck-card-img {
+      width: 40px;
+      height: auto;
+      border-radius: 6px;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -461,11 +461,7 @@
     <h2>対戦履歴</h2>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <small id="countText">0件</small>
-      <div style="display:flex; gap:6px;">
-        <button class="btn-sub" type="button" onclick="backupData()" style="font-size:11px;">バックアップ</button>
-        <button class="btn-sub" type="button" onclick="restoreData()" style="font-size:11px;">復元</button>
-        <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
-      </div>
+      <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
     </div>
     <div style="overflow-x:auto;">
       <table id="recordsTable">
@@ -492,13 +488,6 @@
     fire: "炎", water: "水", grass: "草",
     lightning: "雷", psychic: "超", darkness: "悪",
     fighting: "闘", metal: "鋼", colorless: "無"
-  };
-
-  // ★ デッキ名 → カード画像ファイル（自分の cards フォルダに合わせて自由に編集）
-  const DECK_IMAGE_MAP = {
-    "エビワラー": "cards/ebihit.png"
-    // 例: "ロストギラティナ": "cards/lost_gira.png",
-    //     "パオジアン": "cards/paojian.png"
   };
 
   let records = [];
@@ -840,6 +829,7 @@
       ctx.fillText(String(i+1), x-3, height-5);
     }
 
+    // 左の累計ポイント目盛り
     const minY = Math.floor(minVal);
     const maxY = Math.ceil(maxVal);
     for (let v=minY; v<=maxY; v++){
@@ -1034,36 +1024,6 @@
     render();
   }
 
-  // ★ 自分／相手のデッキセルを作る（カード画像＋デッキ名＋属性アイコン）
-  function createDeckCell(deckName, typeKey, isOpponent) {
-    const td = document.createElement("td");
-    td.className = "deck-cell";
-
-    const cardSrc = DECK_IMAGE_MAP[deckName || ""];
-    if (cardSrc) {
-      const cardImg = document.createElement("img");
-      cardImg.src = cardSrc;
-      cardImg.alt = "";
-      cardImg.className = "card-thumb";
-      td.appendChild(cardImg);
-    }
-
-    const typeSrc = typeIconSrc(typeKey);
-    if (typeSrc) {
-      const typeImg = document.createElement("img");
-      typeImg.src = typeSrc;
-      typeImg.alt = "";
-      typeImg.className = "type-icon";
-      td.appendChild(typeImg);
-    }
-
-    const span = document.createElement("span");
-    span.textContent = deckName || "";
-    td.appendChild(span);
-
-    return td;
-  }
-
   function renderTable() {
     const tbody = document.querySelector("#recordsTable tbody");
     tbody.innerHTML = "";
@@ -1080,19 +1040,45 @@
       const tdDate=document.createElement("td");
       tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      // 自分のデッキセル
-      const tdMy = createDeckCell(rec.myDeck, rec.type, false);
+      // 自分のデッキ（アイコン＋名前）中央揃え
+      const tdMy=document.createElement("td");
+      const spanMy=document.createElement("div");
+      spanMy.className = "deck-cell";
+      const mySrc=typeIconSrc(rec.type);
+      if (mySrc){
+        const img=document.createElement("img");
+        img.src=mySrc; img.alt=""; img.className="type-icon";
+        spanMy.appendChild(img);
+      }
+      spanMy.appendChild(document.createTextNode(rec.myDeck||""));
+      tdMy.appendChild(spanMy);
 
-      // 相手のデッキセル
-      const tdOpp = createDeckCell(rec.opponentDeck, rec.opponentType, true);
+      const tdOpp=document.createElement("td");
+      const spanOpp=document.createElement("span");
+      const oppSrc=typeIconSrc(rec.opponentType);
+      if (oppSrc){
+        const img2=document.createElement("img");
+        img2.src=oppSrc; img2.alt=""; img2.className="type-icon";
+        spanOpp.appendChild(img2);
+      }
+      spanOpp.appendChild(document.createTextNode(rec.opponentDeck||""));
+      tdOpp.appendChild(spanOpp);
 
+      // 結果セル：勝ちの下に先攻/後攻を縦並び
       const tdRes=document.createElement("td");
+      tdRes.style.display = "flex";
+      tdRes.style.flexDirection = "column";
+      tdRes.style.alignItems = "flex-start";
+
       const spanR=document.createElement("span");
       spanR.textContent = resultLabel(rec.result);
       spanR.className = resultClass(rec.result);
+
       const spanO=document.createElement("span");
       spanO.textContent = orderLabel(rec.order);
       spanO.className = "tag-order";
+      spanO.style.marginTop = "2px";
+
       tdRes.appendChild(spanR);
       tdRes.appendChild(spanO);
 
@@ -1299,51 +1285,6 @@
     if (sel.value==="win") color="#1d4ed8";
     else if (sel.value==="lose") color="#b91c1c";
     sel.style.color=color;
-  }
-
-  // ★ バックアップ（JSONファイルをダウンロード）
-  function backupData() {
-    if (!records.length) {
-      alert("バックアップするデータがありません。");
-      return;
-    }
-    const blob = new Blob([JSON.stringify(records, null, 2)], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const today = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = "pokepoke-backup-" + today + ".json";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  // ★ 復元（JSON を読み込んで records に上書き）
-  function restoreData() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = (e)=>{
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev)=>{
-        try {
-          const data = JSON.parse(ev.target.result);
-          if (!Array.isArray(data)) throw new Error("not array");
-          records = data;
-          saveData();
-          clearForm();
-          render();
-          alert("復元しました。");
-        } catch (err) {
-          alert("復元に失敗しました。ファイルを確認してください。");
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
   }
 
   loadData();
