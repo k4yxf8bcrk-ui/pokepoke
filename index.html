@@ -149,6 +149,15 @@
       margin-right: 4px;
       vertical-align: middle;
     }
+    /* デッキカード画像（サムネ） */
+    .deck-card-icon {
+      width: 32px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
     .type-preview {
       margin-top: 4px;
       font-size: 12px;
@@ -362,6 +371,17 @@
       <button id="submitButton" class="btn-main" type="button" onclick="addRecord()">記録を追加</button>
     </div>
     <p class="muted">※ ブラウザの中に自動保存されます（localStorage使用）。</p>
+
+    <!-- AI予想ブロック -->
+    <div id="aiArea" style="margin-top:12px; padding:8px 10px; border-radius:10px; background:#eff6ff;">
+      <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">AI予想</div>
+      <div id="aiPredictionText" class="muted" style="margin-bottom:4px;">
+        条件を入力すると予想が表示されます。
+      </div>
+      <div style="height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden;">
+        <div id="aiPredictionBar" style="height:8px; width:0%; border-radius:999px;"></div>
+      </div>
+    </div>
   </section>
 
   <!-- 成績サマリ -->
@@ -446,8 +466,6 @@
   <!-- 対戦一覧 -->
   <section class="card">
     <h2>対戦履歴</h2>
-
-    <!-- 🔹ここが変更ポイント：3ボタン追加＋input追加 -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <small id="countText">0件</small>
       <div style="display:flex; gap:4px;">
@@ -456,7 +474,6 @@
         <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
       </div>
     </div>
-    <!-- 復元用ファイル選択（非表示） -->
     <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(event)">
 
     <div style="overflow-x:auto;">
@@ -484,6 +501,15 @@
     fire: "炎", water: "水", grass: "草",
     lightning: "雷", psychic: "超", darkness: "悪",
     fighting: "闘", metal: "鋼", colorless: "無"
+  };
+
+  // ★ デッキ名 → カード画像ファイルの対応表（自由に追加OK）
+  const DECK_IMAGE_MAP = {
+    "エビワラー": "cards/ebihit.png",
+    "水デッキ": "cards/water_deck.png",
+    "雷デッキ": "cards/lightning_deck.png"
+    // ここに「デッキ名: 画像パス」を追加していく
+    // 例: "ミライドン": "cards/miraidon.png"
   };
 
   let records = [];
@@ -528,6 +554,11 @@
     if (!t) return null;
     return "icons/" + t + ".png";
   }
+  // デッキ → カード画像
+  function deckCardSrc(deckName) {
+    if (!deckName) return null;
+    return DECK_IMAGE_MAP[deckName] || null;
+  }
 
   function applyDeckPreset(which) {
     if (which === "my") {
@@ -537,6 +568,7 @@
       const val = document.getElementById("opponentDeckPreset").value;
       if (val) document.getElementById("opponentDeckInput").value = val;
     }
+    updateAIPrediction();
   }
 
   function renderDeckPresets() {
@@ -592,6 +624,7 @@
       updateOpponentPreview();
       document.getElementById("oppTypePanel").classList.remove("open");
     }
+    updateAIPrediction();
   }
 
   function updateSelfPreview() {
@@ -972,6 +1005,7 @@
     updateSelfPreview();
     updateOpponentPreview();
     updateResultColor();
+    updateAIPrediction();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
   }
@@ -995,6 +1029,7 @@
     updateSelfPreview();
     updateOpponentPreview();
     updateResultColor();
+    updateAIPrediction();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
 
@@ -1037,6 +1072,15 @@
 
       const tdMy=document.createElement("td");
       const spanMy=document.createElement("span");
+
+      const cardSrc = deckCardSrc(rec.myDeck);
+      if (cardSrc) {
+        const cimg = document.createElement("img");
+        cimg.src = cardSrc;
+        cimg.alt = "";
+        cimg.className = "deck-card-icon";
+        spanMy.appendChild(cimg);
+      }
       const mySrc=typeIconSrc(rec.type);
       if (mySrc){
         const img=document.createElement("img");
@@ -1048,6 +1092,14 @@
 
       const tdOpp=document.createElement("td");
       const spanOpp=document.createElement("span");
+      const oppCardSrc = deckCardSrc(rec.opponentDeck);
+      if (oppCardSrc) {
+        const cimg2 = document.createElement("img");
+        cimg2.src = oppCardSrc;
+        cimg2.alt = "";
+        cimg2.className = "deck-card-icon";
+        spanOpp.appendChild(cimg2);
+      }
       const oppSrc=typeIconSrc(rec.opponentType);
       if (oppSrc){
         const img2=document.createElement("img");
@@ -1253,7 +1305,113 @@
     setRateColor("secondRateText", sRate, sTotal>0);
   }
 
-  // ------------ バックアップ / 復元 ここから ------------
+  // ---------- AI予想 用の計算 ----------
+  function calcPredictedWinRate(myDeck, oppDeck, type, opponentType, order) {
+    if (!records.length) return null;
+
+    const wins = records.filter(r=>r.result==="win").length;
+    const loses = records.filter(r=>r.result==="lose").length;
+    const totalBattle = wins + loses;
+    if (totalBattle === 0) return null;
+
+    const baseRate = wins / totalBattle * 100;
+
+    let pairRate = null;
+    if (myDeck && oppDeck) {
+      const pair = records.filter(r=>r.myDeck===myDeck && r.opponentDeck===oppDeck);
+      const pw = pair.filter(r=>r.result==="win").length;
+      const pl = pair.filter(r=>r.result==="lose").length;
+      const pb = pw + pl;
+      if (pb >= 3) {
+        pairRate = pw / pb * 100;
+      }
+    }
+
+    let typeRate = null;
+    if (type && opponentType) {
+      const tlist = records.filter(r=>r.type===type && r.opponentType===opponentType);
+      const tw = tlist.filter(r=>r.result==="win").length;
+      const tl = tlist.filter(r=>r.result==="lose").length;
+      const tb = tw + tl;
+      if (tb >= 5) {
+        typeRate = tw / tb * 100;
+      }
+    }
+
+    let orderRate = null;
+    if (order) {
+      const olist = records.filter(r=>r.order===order);
+      const ow = olist.filter(r=>r.result==="win").length;
+      const ol = olist.filter(r=>r.result==="lose").length;
+      const ob = ow + ol;
+      if (ob >= 5) {
+        orderRate = ow / ob * 100;
+      }
+    }
+
+    const rates = [baseRate];
+    const weights = [1.0];
+
+    if (pairRate !== null) {
+      rates.push(pairRate);
+      weights.push(1.2);
+    }
+    if (typeRate !== null) {
+      rates.push(typeRate);
+      weights.push(0.8);
+    }
+    if (orderRate !== null) {
+      rates.push(orderRate);
+      weights.push(0.5);
+    }
+
+    let num = 0;
+    let den = 0;
+    for (let i=0;i<rates.length;i++){
+      num += rates[i] * weights[i];
+      den += weights[i];
+    }
+    if (den === 0) return baseRate;
+
+    let pred = num / den;
+    if (pred < 5) pred = 5;
+    if (pred > 95) pred = 95;
+    return pred;
+  }
+
+  function updateAIPrediction() {
+    const myDeck = document.getElementById("myDeckInput").value.trim();
+    const oppDeck = document.getElementById("opponentDeckInput").value.trim();
+    const type = document.getElementById("typeInput").value;
+    const opponentType = document.getElementById("opponentTypeInput").value;
+    const order = document.getElementById("orderInput").value;
+
+    const textEl = document.getElementById("aiPredictionText");
+    const barEl  = document.getElementById("aiPredictionBar");
+    if (!textEl || !barEl) return;
+
+    const p = calcPredictedWinRate(myDeck, oppDeck, type, opponentType, order);
+
+    if (p == null) {
+      textEl.textContent = "条件を入力すると予想が表示されます。";
+      barEl.style.width = "0%";
+      barEl.style.background = "#9ca3af";
+      return;
+    }
+
+    let comment = "";
+    if (p >= 70) comment = "かなり有利";
+    else if (p >= 55) comment = "やや有利";
+    else if (p >= 45) comment = "五分";
+    else if (p >= 30) comment = "やや不利";
+    else comment = "かなり不利";
+
+    textEl.textContent = `予想勝率：${p.toFixed(1)}%（${comment}）`;
+    barEl.style.width = p.toFixed(1) + "%";
+    barEl.style.background = p >= 50 ? "#2563eb" : "#dc2626";
+  }
+
+  // ------------ バックアップ / 復元 ------------
   function exportBackup() {
     if (!records.length) {
       alert("まだバックアップするデータがありません。");
@@ -1308,7 +1466,7 @@
     };
     reader.readAsText(file, "utf-8");
   }
-  // ------------ バックアップ / 復元 ここまで ------------
+  // ------------ ここまで ------------
 
   function render() {
     renderTable();
@@ -1318,6 +1476,7 @@
     renderDeckStats();
     renderTypeMatrix();
     renderDeckPresets();
+    updateAIPrediction();
   }
 
   function updateResultColor() {
@@ -1338,6 +1497,15 @@
     updateOpponentPreview();
     updateResultColor();
     render();
+
+    // 入力のたびにAI予想を更新
+    const myDeckInput = document.getElementById("myDeckInput");
+    const oppDeckInput = document.getElementById("opponentDeckInput");
+    const orderInput = document.getElementById("orderInput");
+
+    if (myDeckInput) myDeckInput.addEventListener("input", updateAIPrediction);
+    if (oppDeckInput) oppDeckInput.addEventListener("input", updateAIPrediction);
+    if (orderInput) orderInput.addEventListener("change", updateAIPrediction);
   });
 </script>
 </body>
