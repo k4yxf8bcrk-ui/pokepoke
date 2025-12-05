@@ -149,15 +149,6 @@
       margin-right: 4px;
       vertical-align: middle;
     }
-    /* デッキカード画像（サムネ） */
-    .deck-card-icon {
-      width: 32px;
-      height: 44px;
-      object-fit: cover;
-      border-radius: 4px;
-      margin-right: 4px;
-      vertical-align: middle;
-    }
     .type-preview {
       margin-top: 4px;
       font-size: 12px;
@@ -233,6 +224,19 @@
     #deckStatsTable th,
     #deckStatsTable td {
       font-size: 12px;
+    }
+
+    /* ★ デッキ名＋カード画像用（ズレ修正） */
+    .deck-cell {
+      display: flex;
+      align-items: center;    /* 縦位置を中央揃え */
+      gap: 4px;
+    }
+    .deck-cell .card-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      object-fit: cover;
     }
   </style>
 </head>
@@ -371,17 +375,6 @@
       <button id="submitButton" class="btn-main" type="button" onclick="addRecord()">記録を追加</button>
     </div>
     <p class="muted">※ ブラウザの中に自動保存されます（localStorage使用）。</p>
-
-    <!-- AI予想ブロック -->
-    <div id="aiArea" style="margin-top:12px; padding:8px 10px; border-radius:10px; background:#eff6ff;">
-      <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">AI予想</div>
-      <div id="aiPredictionText" class="muted" style="margin-bottom:4px;">
-        条件を入力すると予想が表示されます。
-      </div>
-      <div style="height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden;">
-        <div id="aiPredictionBar" style="height:8px; width:0%; border-radius:999px;"></div>
-      </div>
-    </div>
   </section>
 
   <!-- 成績サマリ -->
@@ -468,14 +461,12 @@
     <h2>対戦履歴</h2>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <small id="countText">0件</small>
-      <div style="display:flex; gap:4px;">
-        <button class="btn-sub" type="button" onclick="exportBackup()" style="font-size:11px;">バックアップ</button>
-        <button class="btn-sub" type="button" onclick="triggerImport()" style="font-size:11px;">復元</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn-sub" type="button" onclick="backupData()" style="font-size:11px;">バックアップ</button>
+        <button class="btn-sub" type="button" onclick="restoreData()" style="font-size:11px;">復元</button>
         <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
       </div>
     </div>
-    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(event)">
-
     <div style="overflow-x:auto;">
       <table id="recordsTable">
         <thead>
@@ -503,13 +494,11 @@
     fighting: "闘", metal: "鋼", colorless: "無"
   };
 
-  // ★ デッキ名 → カード画像ファイルの対応表（自由に追加OK）
+  // ★ デッキ名 → カード画像ファイル（自分の cards フォルダに合わせて自由に編集）
   const DECK_IMAGE_MAP = {
-    "エビワラー": "cards/ebihit.png",
-    "水デッキ": "cards/water_deck.png",
-    "雷デッキ": "cards/lightning_deck.png"
-    // ここに「デッキ名: 画像パス」を追加していく
-    // 例: "ミライドン": "cards/miraidon.png"
+    "エビワラー": "cards/ebihit.png"
+    // 例: "ロストギラティナ": "cards/lost_gira.png",
+    //     "パオジアン": "cards/paojian.png"
   };
 
   let records = [];
@@ -554,11 +543,6 @@
     if (!t) return null;
     return "icons/" + t + ".png";
   }
-  // デッキ → カード画像
-  function deckCardSrc(deckName) {
-    if (!deckName) return null;
-    return DECK_IMAGE_MAP[deckName] || null;
-  }
 
   function applyDeckPreset(which) {
     if (which === "my") {
@@ -568,7 +552,6 @@
       const val = document.getElementById("opponentDeckPreset").value;
       if (val) document.getElementById("opponentDeckInput").value = val;
     }
-    updateAIPrediction();
   }
 
   function renderDeckPresets() {
@@ -624,7 +607,6 @@
       updateOpponentPreview();
       document.getElementById("oppTypePanel").classList.remove("open");
     }
-    updateAIPrediction();
   }
 
   function updateSelfPreview() {
@@ -847,7 +829,7 @@
       const {x,y} = pointToXY(i,v);
       ctx.fillStyle = v>=0 ? "#2563eb" : "#dc2626";
       ctx.beginPath();
-      ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.arc(x, y, 3, 0, Math.PI*2);
       ctx.fill();
     }
 
@@ -1005,7 +987,6 @@
     updateSelfPreview();
     updateOpponentPreview();
     updateResultColor();
-    updateAIPrediction();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
   }
@@ -1029,7 +1010,6 @@
     updateSelfPreview();
     updateOpponentPreview();
     updateResultColor();
-    updateAIPrediction();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
 
@@ -1054,6 +1034,36 @@
     render();
   }
 
+  // ★ 自分／相手のデッキセルを作る（カード画像＋デッキ名＋属性アイコン）
+  function createDeckCell(deckName, typeKey, isOpponent) {
+    const td = document.createElement("td");
+    td.className = "deck-cell";
+
+    const cardSrc = DECK_IMAGE_MAP[deckName || ""];
+    if (cardSrc) {
+      const cardImg = document.createElement("img");
+      cardImg.src = cardSrc;
+      cardImg.alt = "";
+      cardImg.className = "card-thumb";
+      td.appendChild(cardImg);
+    }
+
+    const typeSrc = typeIconSrc(typeKey);
+    if (typeSrc) {
+      const typeImg = document.createElement("img");
+      typeImg.src = typeSrc;
+      typeImg.alt = "";
+      typeImg.className = "type-icon";
+      td.appendChild(typeImg);
+    }
+
+    const span = document.createElement("span");
+    span.textContent = deckName || "";
+    td.appendChild(span);
+
+    return td;
+  }
+
   function renderTable() {
     const tbody = document.querySelector("#recordsTable tbody");
     tbody.innerHTML = "";
@@ -1070,44 +1080,11 @@
       const tdDate=document.createElement("td");
       tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      const tdMy=document.createElement("td");
-      const spanMy=document.createElement("span");
+      // 自分のデッキセル
+      const tdMy = createDeckCell(rec.myDeck, rec.type, false);
 
-      const cardSrc = deckCardSrc(rec.myDeck);
-      if (cardSrc) {
-        const cimg = document.createElement("img");
-        cimg.src = cardSrc;
-        cimg.alt = "";
-        cimg.className = "deck-card-icon";
-        spanMy.appendChild(cimg);
-      }
-      const mySrc=typeIconSrc(rec.type);
-      if (mySrc){
-        const img=document.createElement("img");
-        img.src=mySrc; img.alt=""; img.className="type-icon";
-        spanMy.appendChild(img);
-      }
-      spanMy.appendChild(document.createTextNode(rec.myDeck||""));
-      tdMy.appendChild(spanMy);
-
-      const tdOpp=document.createElement("td");
-      const spanOpp=document.createElement("span");
-      const oppCardSrc = deckCardSrc(rec.opponentDeck);
-      if (oppCardSrc) {
-        const cimg2 = document.createElement("img");
-        cimg2.src = oppCardSrc;
-        cimg2.alt = "";
-        cimg2.className = "deck-card-icon";
-        spanOpp.appendChild(cimg2);
-      }
-      const oppSrc=typeIconSrc(rec.opponentType);
-      if (oppSrc){
-        const img2=document.createElement("img");
-        img2.src=oppSrc; img2.alt=""; img2.className="type-icon";
-        spanOpp.appendChild(img2);
-      }
-      spanOpp.appendChild(document.createTextNode(rec.opponentDeck||""));
-      tdOpp.appendChild(spanOpp);
+      // 相手のデッキセル
+      const tdOpp = createDeckCell(rec.opponentDeck, rec.opponentType, true);
 
       const tdRes=document.createElement("td");
       const spanR=document.createElement("span");
@@ -1305,169 +1282,6 @@
     setRateColor("secondRateText", sRate, sTotal>0);
   }
 
-  // ---------- AI予想 用の計算 ----------
-  function calcPredictedWinRate(myDeck, oppDeck, type, opponentType, order) {
-    if (!records.length) return null;
-
-    const wins = records.filter(r=>r.result==="win").length;
-    const loses = records.filter(r=>r.result==="lose").length;
-    const totalBattle = wins + loses;
-    if (totalBattle === 0) return null;
-
-    const baseRate = wins / totalBattle * 100;
-
-    let pairRate = null;
-    if (myDeck && oppDeck) {
-      const pair = records.filter(r=>r.myDeck===myDeck && r.opponentDeck===oppDeck);
-      const pw = pair.filter(r=>r.result==="win").length;
-      const pl = pair.filter(r=>r.result==="lose").length;
-      const pb = pw + pl;
-      if (pb >= 3) {
-        pairRate = pw / pb * 100;
-      }
-    }
-
-    let typeRate = null;
-    if (type && opponentType) {
-      const tlist = records.filter(r=>r.type===type && r.opponentType===opponentType);
-      const tw = tlist.filter(r=>r.result==="win").length;
-      const tl = tlist.filter(r=>r.result==="lose").length;
-      const tb = tw + tl;
-      if (tb >= 5) {
-        typeRate = tw / tb * 100;
-      }
-    }
-
-    let orderRate = null;
-    if (order) {
-      const olist = records.filter(r=>r.order===order);
-      const ow = olist.filter(r=>r.result==="win").length;
-      const ol = olist.filter(r=>r.result==="lose").length;
-      const ob = ow + ol;
-      if (ob >= 5) {
-        orderRate = ow / ob * 100;
-      }
-    }
-
-    const rates = [baseRate];
-    const weights = [1.0];
-
-    if (pairRate !== null) {
-      rates.push(pairRate);
-      weights.push(1.2);
-    }
-    if (typeRate !== null) {
-      rates.push(typeRate);
-      weights.push(0.8);
-    }
-    if (orderRate !== null) {
-      rates.push(orderRate);
-      weights.push(0.5);
-    }
-
-    let num = 0;
-    let den = 0;
-    for (let i=0;i<rates.length;i++){
-      num += rates[i] * weights[i];
-      den += weights[i];
-    }
-    if (den === 0) return baseRate;
-
-    let pred = num / den;
-    if (pred < 5) pred = 5;
-    if (pred > 95) pred = 95;
-    return pred;
-  }
-
-  function updateAIPrediction() {
-    const myDeck = document.getElementById("myDeckInput").value.trim();
-    const oppDeck = document.getElementById("opponentDeckInput").value.trim();
-    const type = document.getElementById("typeInput").value;
-    const opponentType = document.getElementById("opponentTypeInput").value;
-    const order = document.getElementById("orderInput").value;
-
-    const textEl = document.getElementById("aiPredictionText");
-    const barEl  = document.getElementById("aiPredictionBar");
-    if (!textEl || !barEl) return;
-
-    const p = calcPredictedWinRate(myDeck, oppDeck, type, opponentType, order);
-
-    if (p == null) {
-      textEl.textContent = "条件を入力すると予想が表示されます。";
-      barEl.style.width = "0%";
-      barEl.style.background = "#9ca3af";
-      return;
-    }
-
-    let comment = "";
-    if (p >= 70) comment = "かなり有利";
-    else if (p >= 55) comment = "やや有利";
-    else if (p >= 45) comment = "五分";
-    else if (p >= 30) comment = "やや不利";
-    else comment = "かなり不利";
-
-    textEl.textContent = `予想勝率：${p.toFixed(1)}%（${comment}）`;
-    barEl.style.width = p.toFixed(1) + "%";
-    barEl.style.background = p >= 50 ? "#2563eb" : "#dc2626";
-  }
-
-  // ------------ バックアップ / 復元 ------------
-  function exportBackup() {
-    if (!records.length) {
-      alert("まだバックアップするデータがありません。");
-      return;
-    }
-    const data = JSON.stringify(records, null, 2);
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = ("0" + (now.getMonth() + 1)).slice(-2);
-    const d = ("0" + now.getDate()).slice(-2);
-
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pokepoke_backup_${y}${m}${d}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function triggerImport() {
-    const input = document.getElementById("importFile");
-    if (input) input.click();
-  }
-
-  function importBackup(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      try {
-        const json = JSON.parse(e.target.result);
-        if (!Array.isArray(json)) {
-          alert("バックアップデータの形式が違います。");
-          return;
-        }
-        if (!confirm("現在のデータを上書きして復元しますか？")) {
-          return;
-        }
-        records = json;
-        saveData();
-        render();
-        alert("復元が完了しました。");
-      } catch (err) {
-        console.error(err);
-        alert("バックアップファイルの読み込みに失敗しました。");
-      }
-    };
-    reader.readAsText(file, "utf-8");
-  }
-  // ------------ ここまで ------------
-
   function render() {
     renderTable();
     renderStats();
@@ -1476,7 +1290,6 @@
     renderDeckStats();
     renderTypeMatrix();
     renderDeckPresets();
-    updateAIPrediction();
   }
 
   function updateResultColor() {
@@ -1488,6 +1301,51 @@
     sel.style.color=color;
   }
 
+  // ★ バックアップ（JSONファイルをダウンロード）
+  function backupData() {
+    if (!records.length) {
+      alert("バックアップするデータがありません。");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(records, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const today = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = "pokepoke-backup-" + today + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ★ 復元（JSON を読み込んで records に上書き）
+  function restoreData() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = (e)=>{
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!Array.isArray(data)) throw new Error("not array");
+          records = data;
+          saveData();
+          clearForm();
+          render();
+          alert("復元しました。");
+        } catch (err) {
+          alert("復元に失敗しました。ファイルを確認してください。");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
   loadData();
   window.addEventListener("load",()=>{
     const today=new Date().toISOString().slice(0,10);
@@ -1497,15 +1355,6 @@
     updateOpponentPreview();
     updateResultColor();
     render();
-
-    // 入力のたびにAI予想を更新
-    const myDeckInput = document.getElementById("myDeckInput");
-    const oppDeckInput = document.getElementById("opponentDeckInput");
-    const orderInput = document.getElementById("orderInput");
-
-    if (myDeckInput) myDeckInput.addEventListener("input", updateAIPrediction);
-    if (oppDeckInput) oppDeckInput.addEventListener("input", updateAIPrediction);
-    if (orderInput) orderInput.addEventListener("change", updateAIPrediction);
   });
 </script>
 </body>
