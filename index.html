@@ -48,13 +48,15 @@
     }
     input[type="text"],
     input[type="date"],
-    textarea {
+    textarea,
+    select {
       width: 100%;
       box-sizing: border-box;
       padding: 6px 8px;
       border-radius: 8px;
       border: 1px solid #d1d5db;
       font-size: 13px;
+      background: #ffffff;
     }
     textarea {
       min-height: 50px;
@@ -242,11 +244,41 @@
       </div>
       <div>
         <label>自分のデッキ</label>
+        <!-- プルダウン（任意） -->
+        <select id="myDeckPreset" onchange="applyDeckPreset('my')">
+          <option value="">▼ プルダウンから選択（任意）</option>
+          <option value="メガバーシャモ">メガバーシャモ</option>
+          <option value="ガブリアス">ガブリアス</option>
+          <option value="カメックス">カメックス</option>
+          <option value="メガアブソル">メガアブソル</option>
+          <option value="ミュウツー">ミュウツー</option>
+          <option value="リザードン">リザードン</option>
+          <option value="サーナイト">サーナイト</option>
+          <option value="ゲッコウガ">ゲッコウガ</option>
+          <option value="ピカチュウ">ピカチュウ</option>
+          <option value="その他">その他</option>
+        </select>
+        <!-- 自由入力 -->
         <input type="text" id="myDeckInput" placeholder="例）エビワラー" />
       </div>
     </div>
 
     <label>相手のデッキ</label>
+    <!-- プルダウン（任意） -->
+    <select id="opponentDeckPreset" onchange="applyDeckPreset('opp')">
+      <option value="">▼ プルダウンから選択（任意）</option>
+      <option value="メガバーシャモ">メガバーシャモ</option>
+      <option value="ガブリアス">ガブリアス</option>
+      <option value="カメックス">カメックス</option>
+      <option value="メガアブソル">メガアブソル</option>
+      <option value="ミュウツー">ミュウツー</option>
+      <option value="リザードン">リザードン</option>
+      <option value="サーナイト">サーナイト</option>
+      <option value="ゲッコウガ">ゲッコウガ</option>
+      <option value="ピカチュウ">ピカチュウ</option>
+      <option value="その他">その他</option>
+    </select>
+    <!-- 自由入力 -->
     <input type="text" id="opponentDeckInput" placeholder="例）水デッキ" />
 
     <div class="row">
@@ -333,7 +365,7 @@
     <div class="row">
       <div>
         <label>結果</label>
-        <select id="resultInput" style="width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:13px;">
+        <select id="resultInput">
           <option value="win">勝ち</option>
           <option value="lose">負け</option>
           <option value="draw">引き分け</option>
@@ -341,7 +373,7 @@
       </div>
       <div>
         <label>先攻 / 後攻</label>
-        <select id="orderInput" style="width:100%;padding:6px 8px;border-radius:8px;border:1px solid #d1d5db;font-size:13px;">
+        <select id="orderInput">
           <option value="first">先攻</option>
           <option value="second">後攻</option>
         </select>
@@ -353,7 +385,7 @@
 
     <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
       <button class="btn-sub" type="button" onclick="clearForm()">リセット</button>
-      <button class="btn-main" type="button" onclick="addRecord()">記録を追加</button>
+      <button id="submitButton" class="btn-main" type="button" onclick="addRecord()">記録を追加</button>
     </div>
     <p class="muted">※ ブラウザの中に自動保存されます（localStorage使用）。</p>
   </section>
@@ -388,14 +420,14 @@
   <!-- 勝率グラフ -->
   <section class="card">
     <h2>勝率の推移</h2>
-    <small>勝ち / 負けのみで計算（引き分けは除外）</small>
+    <small>勝ち / 負けのみで計算（引き分けは除外）｜下の数字は「何戦目」</small>
     <canvas id="winrateCanvas"></canvas>
   </section>
 
   <!-- スランプグラフ -->
   <section class="card">
     <h2>スランプグラフ</h2>
-    <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）</small>
+    <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）｜下の数字は「何戦目」</small>
     <canvas id="slumpCanvas"></canvas>
     <small id="slumpInfo" class="muted"></small><br>
     <small id="streakMax" class="muted"></small><br>
@@ -480,6 +512,7 @@
 
   // ------------ データ管理 ------------
   let records = [];
+  let editingId = null; // 編集中のID（なければ null）
 
   function loadData() {
     const raw = localStorage.getItem("pokepokeRecords");
@@ -529,6 +562,19 @@
   function typeIconSrc(t) {
     if (!t) return null;
     return "icons/" + t + ".png";
+  }
+
+  // デッキプリセット → テキストボックスへ反映
+  function applyDeckPreset(which) {
+    if (which === "my") {
+      const sel = document.getElementById("myDeckPreset");
+      const val = sel.value;
+      if (val) document.getElementById("myDeckInput").value = val;
+    } else {
+      const sel = document.getElementById("opponentDeckPreset");
+      const val = sel.value;
+      if (val) document.getElementById("opponentDeckInput").value = val;
+    }
   }
 
   // ------------ アイコンパネル制御 ------------
@@ -601,7 +647,7 @@
     }
   }
 
-  // ------------ スランプ計算 ------------
+  // ------------ 並び順 & スランプ ------------
   function sortedByDateAsc() {
     return records
       .slice()
@@ -610,7 +656,7 @@
         const bd = b.date || "";
         if (ad < bd) return -1;
         if (ad > bd) return 1;
-        return a.id - b.id;
+        return (a.id || 0) - (b.id || 0);
       });
   }
 
@@ -626,16 +672,16 @@
     return points;
   }
 
-  // 各試合のスランプ値（id -> value）
   function calcSlumpMap() {
     const sorted = sortedByDateAsc();
     let value = 0;
     const map = {};
-    for (const r of sorted) {
+    sorted.forEach((r, i) => {
       if (r.result === "win") value += 1;
       else if (r.result === "lose") value -= 1;
       map[r.id] = value;
-    }
+      r.battleNumber = i + 1;
+    });
     return map;
   }
 
@@ -698,7 +744,6 @@
 
     const points = calcSlumpPoints();
 
-    // 連勝・連敗表示
     const st = calcStreaks();
     const maxW = st.maxWin;
     const maxL = st.maxLose;
@@ -715,7 +760,6 @@
       streakCurrentEl.textContent = `現在の連勝：${nowW}連勝　｜　現在の連敗：${nowL}連敗`;
     }
 
-    // スランプ情報ラベル
     if (!points.length) {
       if (info) info.textContent = "まだデータがありません";
       ctx.fillStyle = "#9ca3af";
@@ -740,11 +784,11 @@
     ctx.fillStyle = "#f9fafb";
     ctx.fillRect(padding, padding, usableW, usableH);
 
-    // 横グリッド（4本）
+    // 横グリッド
+    const gridCount = 4;
+    ctx.setLineDash([4, 4]);
     ctx.strokeStyle = "#e5e7eb";
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    const gridCount = 4;
     for (let i = 0; i <= gridCount; i++) {
       const y = padding + (usableH * i) / gridCount;
       ctx.beginPath();
@@ -754,16 +798,15 @@
     }
     ctx.setLineDash([]);
 
-    // 0ライン（太め）
+    // 0ライン（濃く・太く）
     const zeroY = padding + usableH * (maxVal / range);
-    ctx.strokeStyle = "#9ca3af";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#4b5563";
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(padding, zeroY);
     ctx.lineTo(width - padding, zeroY);
     ctx.stroke();
 
-    // 座標変換
     function pointToXY(idx, v) {
       const ratio = points.length === 1 ? 0.5 : idx / (points.length - 1);
       const x = padding + usableW * ratio;
@@ -771,7 +814,7 @@
       return { x, y };
     }
 
-    // 線（区間ごとに色変え）
+    // 線
     ctx.lineWidth = 2;
     for (let i = 1; i < points.length; i++) {
       const v1 = points[i - 1];
@@ -796,6 +839,14 @@
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // X軸に「何戦目」を表示
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    for (let i = 0; i < points.length; i++) {
+      const { x } = pointToXY(i, points[i]);
+      ctx.fillText(String(i + 1), x - 3, height - 5);
     }
   }
 
@@ -825,7 +876,7 @@
     const minVal = 0;
     const range = Math.max(maxVal - minVal, 1);
 
-    const padding = 24;
+    const padding = 28;
     const usableW = width - padding * 2;
     const usableH = height - padding * 2;
 
@@ -834,24 +885,32 @@
     ctx.fillRect(padding, padding, usableW, usableH);
 
     // 横グリッド（0,25,50,75,100）
-    ctx.strokeStyle = "#e5e7eb";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
     const levels = [0,25,50,75,100];
     ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "#6b7280";
+
     levels.forEach(lv => {
       const ratio = (lv - minVal) / range;
       const y = padding + usableH * (1 - ratio);
+
+      if (lv === 0) {
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "#4b5563";
+        ctx.lineWidth = 2.5;
+      } else {
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1;
+      }
       ctx.beginPath();
       ctx.moveTo(padding, y);
       ctx.lineTo(width - padding, y);
       ctx.stroke();
+      ctx.setLineDash([]);
+
       ctx.fillText(lv + "%", 4, y + 3);
     });
-    ctx.setLineDash([]);
 
-    // 座標変換
     function pointToXY(idx, v) {
       const ratio = points.length === 1 ? 0.5 : idx / (points.length - 1);
       const x = padding + usableW * ratio;
@@ -879,9 +938,17 @@
       ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    // X軸に「何戦目」
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    points.forEach((v, i) => {
+      const { x } = pointToXY(i, v);
+      ctx.fillText(String(i + 1), x - 3, height - 5);
+    });
   }
 
-  // ------------ 追加／クリア ------------
+  // ------------ 追加／編集／クリア ------------
   function addRecord() {
     const date = document.getElementById("dateInput").value;
     const myDeck = document.getElementById("myDeckInput").value.trim();
@@ -892,25 +959,45 @@
     const order = document.getElementById("orderInput").value;
     const memo = document.getElementById("memoInput").value.trim();
 
-    if (!myDeck) {
-      alert("自分のデッキ名を入力してください。");
-      return;
+    // デッキ名は「未記入でもOK」にしたのでバリデーションなし
+
+    if (editingId !== null) {
+      // 既存レコード更新
+      const idx = records.findIndex(r => r.id === editingId);
+      if (idx !== -1) {
+        const old = records[idx];
+        records[idx] = {
+          ...old,
+          date,
+          myDeck,
+          opponentDeck,
+          type,
+          opponentType,
+          result,
+          order,
+          memo
+        };
+      }
+    } else {
+      // 新規追加
+      const rec = {
+        id: Date.now(),
+        date,
+        myDeck,
+        opponentDeck,
+        type,
+        opponentType,
+        result,
+        order,
+        memo
+      };
+      records.push(rec);
     }
 
-    const rec = {
-      id: Date.now(),
-      date,
-      myDeck,
-      opponentDeck,
-      type,
-      opponentType,
-      result,
-      order,
-      memo
-    };
-
-    records.push(rec);
     saveData();
+    editingId = null;
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を追加";
     render();
     clearForm();
   }
@@ -920,21 +1007,54 @@
     document.getElementById("dateInput").value = today;
     document.getElementById("myDeckInput").value = "";
     document.getElementById("opponentDeckInput").value = "";
+    document.getElementById("myDeckPreset").value = "";
+    document.getElementById("opponentDeckPreset").value = "";
     document.getElementById("typeInput").value = "";
     document.getElementById("opponentTypeInput").value = "";
     document.getElementById("resultInput").value = "win";
     document.getElementById("orderInput").value = "first";
     document.getElementById("memoInput").value = "";
+    editingId = null;
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を追加";
     updateSelfPreview();
     updateOpponentPreview();
     document.getElementById("selfTypePanel").classList.remove("open");
     document.getElementById("oppTypePanel").classList.remove("open");
   }
 
+  function editRecord(id) {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    editingId = id;
+
+    document.getElementById("dateInput").value = rec.date || "";
+    document.getElementById("myDeckInput").value = rec.myDeck || "";
+    document.getElementById("opponentDeckInput").value = rec.opponentDeck || "";
+    document.getElementById("myDeckPreset").value = "";
+    document.getElementById("opponentDeckPreset").value = "";
+    document.getElementById("typeInput").value = rec.type || "";
+    document.getElementById("opponentTypeInput").value = rec.opponentType || "";
+    document.getElementById("resultInput").value = rec.result || "win";
+    document.getElementById("orderInput").value = rec.order || "first";
+    document.getElementById("memoInput").value = rec.memo || "";
+
+    updateSelfPreview();
+    updateOpponentPreview();
+    document.getElementById("selfTypePanel").classList.remove("open");
+    document.getElementById("oppTypePanel").classList.remove("open");
+
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を更新";
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function deleteRecord(id) {
     if (!confirm("この記録を削除しますか？")) return;
     records = records.filter(r => r.id !== id);
     saveData();
+    clearForm();
     render();
   }
 
@@ -942,6 +1062,7 @@
     if (!confirm("すべての記録を削除しますか？")) return;
     records = [];
     saveData();
+    clearForm();
     render();
   }
 
@@ -955,21 +1076,8 @@
       return;
     }
 
-    // 古い順
-    const sortedAsc = sortedByDateAsc();
-
-    // 戦番号＆スランプ値
-    const slumpMap = {};
-    let slump = 0;
-    sortedAsc.forEach((r, i) => {
-      if (r.result === "win") slump += 1;
-      else if (r.result === "lose") slump -= 1;
-      slumpMap[r.id] = slump;
-      r.battleNumber = i + 1;
-    });
-
-    // 新しい順で表示
-    const sortedDesc = sortedAsc.slice().reverse();
+    const slumpMap = calcSlumpMap();
+    const sortedDesc = sortedByDateAsc().slice().reverse();
 
     sortedDesc.forEach(rec => {
       const tr = document.createElement("tr");
@@ -977,7 +1085,6 @@
       const tdDate = document.createElement("td");
       tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      // 自分のデッキ（アイコン＋名前）
       const tdMy = document.createElement("td");
       const spanMy = document.createElement("span");
       const mySrc = typeIconSrc(rec.type);
@@ -991,7 +1098,6 @@
       spanMy.appendChild(document.createTextNode(rec.myDeck || ""));
       tdMy.appendChild(spanMy);
 
-      // 相手のデッキ（アイコン＋名前）
       const tdOpp = document.createElement("td");
       const spanOpp = document.createElement("span");
       const oppSrc = typeIconSrc(rec.opponentType);
@@ -1015,7 +1121,6 @@
       tdRes.appendChild(spanR);
       tdRes.appendChild(spanO);
 
-      // スランプ値
       const tdSlump = document.createElement("td");
       const v = slumpMap[rec.id] ?? 0;
       const sign = v > 0 ? "+" : "";
@@ -1026,15 +1131,24 @@
         "slump-zero";
 
       const tdMemo = document.createElement("td");
-      tdMemo.textContent = rec.memo;
+      tdMemo.textContent = rec.memo || "";
 
-      const tdDel = document.createElement("td");
-      const btn = document.createElement("button");
-      btn.textContent = "削除";
-      btn.className = "btn-sub";
-      btn.style.fontSize = "11px";
-      btn.onclick = () => deleteRecord(rec.id);
-      tdDel.appendChild(btn);
+      const tdAct = document.createElement("td");
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "編集";
+      editBtn.className = "btn-sub";
+      editBtn.style.fontSize = "11px";
+      editBtn.style.marginRight = "4px";
+      editBtn.onclick = () => editRecord(rec.id);
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "削除";
+      delBtn.className = "btn-sub";
+      delBtn.style.fontSize = "11px";
+      delBtn.onclick = () => deleteRecord(rec.id);
+
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(delBtn);
 
       tr.appendChild(tdDate);
       tr.appendChild(tdMy);
@@ -1042,7 +1156,7 @@
       tr.appendChild(tdRes);
       tr.appendChild(tdSlump);
       tr.appendChild(tdMemo);
-      tr.appendChild(tdDel);
+      tr.appendChild(tdAct);
 
       tbody.appendChild(tr);
     });
