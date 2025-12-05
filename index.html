@@ -91,7 +91,7 @@
       border-bottom: 1px solid #e5e7eb;
       padding: 4px 6px;
       text-align: left;
-      vertical-align: middle;   /* 行の中央に揃える */
+      vertical-align: middle;
     }
     th {
       background: #f3f4f6;
@@ -109,11 +109,12 @@
       font-weight: bold;
     }
     .tag-order {
+      display: inline-block;
       font-size: 11px;
       padding: 1px 6px;
       border-radius: 999px;
       background: #e5e7eb;
-      margin-left: 4px;
+      margin-top: 2px;
     }
     .stats-grid {
       display: grid;
@@ -225,18 +226,6 @@
     #deckStatsTable th,
     #deckStatsTable td {
       font-size: 12px;
-    }
-    /* 自分のデッキセルの揃え用 */
-    .deck-cell {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .deck-card-img {
-      width: 40px;
-      height: auto;
-      border-radius: 6px;
-      flex-shrink: 0;
     }
   </style>
 </head>
@@ -377,6 +366,17 @@
     <p class="muted">※ ブラウザの中に自動保存されます（localStorage使用）。</p>
   </section>
 
+  <!-- AIデッキ予想 -->
+  <section class="card">
+    <h2>AI予想：次に勝てそうなデッキ</h2>
+    <p id="aiDeckMessage" class="muted" style="margin-bottom:4px;">
+      まだデータが少ないため予想できません。まずは対戦を記録しましょう。
+    </p>
+    <small class="muted">
+      ※ 自分のデッキごとの勝率と対戦数（5戦以上）からシンプルに計算しています。
+    </small>
+  </section>
+
   <!-- 成績サマリ -->
   <section class="card">
     <h2>成績サマリー</h2>
@@ -427,6 +427,14 @@
     </small>
   </section>
 
+  <!-- 自分の属性 使用率 円グラフ -->
+  <section class="card">
+    <h2>自分のデッキ属性 使用率</h2>
+    <small>自分が使ったデッキの属性の割合（炎・水・草・雷・超・悪・闘・鋼・無色）</small>
+    <canvas id="myTypePie"></canvas>
+    <div id="myTypeLegend" style="margin-top:8px; font-size:12px;"></div>
+  </section>
+
   <!-- デッキ別戦績 -->
   <section class="card">
     <h2>デッキ別戦績（自分のデッキ）</h2>
@@ -461,7 +469,11 @@
     <h2>対戦履歴</h2>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <small id="countText">0件</small>
-      <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
+      <div style="display:flex; gap:4px;">
+        <button class="btn-sub" type="button" onclick="backupData()" style="font-size:11px;">バックアップ</button>
+        <button class="btn-sub" type="button" onclick="restoreData()" style="font-size:11px;">復元</button>
+        <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
+      </div>
     </div>
     <div style="overflow-x:auto;">
       <table id="recordsTable">
@@ -818,7 +830,7 @@
       const {x,y} = pointToXY(i,v);
       ctx.fillStyle = v>=0 ? "#2563eb" : "#dc2626";
       ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.arc(x,y,3,0,Math.PI*2);
       ctx.fill();
     }
 
@@ -829,10 +841,10 @@
       ctx.fillText(String(i+1), x-3, height-5);
     }
 
-    // 左の累計ポイント目盛り
+    // 左に累計ポイントの数値目盛り
     const minY = Math.floor(minVal);
-    const maxY = Math.ceil(maxVal);
-    for (let v=minY; v<=maxY; v++){
+    const maxY2 = Math.ceil(maxVal);
+    for (let v=minY; v<=maxY2; v++){
       const y = padding + usableH*((maxVal - v)/range);
       ctx.fillText(String(v), 6, y+3);
     }
@@ -941,6 +953,11 @@
     const order = document.getElementById("orderInput").value;
     const memo = document.getElementById("memoInput").value.trim();
 
+    if (!myDeck) {
+      alert("自分のデッキ名を入力してください。");
+      return;
+    }
+
     if (editingId !== null) {
       const idx = records.findIndex(r=>r.id===editingId);
       if (idx!==-1){
@@ -1040,45 +1057,23 @@
       const tdDate=document.createElement("td");
       tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      // 自分のデッキ（アイコン＋名前）中央揃え
       const tdMy=document.createElement("td");
-      const spanMy=document.createElement("div");
-      spanMy.className = "deck-cell";
-      const mySrc=typeIconSrc(rec.type);
-      if (mySrc){
-        const img=document.createElement("img");
-        img.src=mySrc; img.alt=""; img.className="type-icon";
-        spanMy.appendChild(img);
-      }
+      const spanMy=document.createElement("span");
       spanMy.appendChild(document.createTextNode(rec.myDeck||""));
       tdMy.appendChild(spanMy);
 
       const tdOpp=document.createElement("td");
       const spanOpp=document.createElement("span");
-      const oppSrc=typeIconSrc(rec.opponentType);
-      if (oppSrc){
-        const img2=document.createElement("img");
-        img2.src=oppSrc; img2.alt=""; img2.className="type-icon";
-        spanOpp.appendChild(img2);
-      }
       spanOpp.appendChild(document.createTextNode(rec.opponentDeck||""));
       tdOpp.appendChild(spanOpp);
 
-      // 結果セル：勝ちの下に先攻/後攻を縦並び
       const tdRes=document.createElement("td");
-      tdRes.style.display = "flex";
-      tdRes.style.flexDirection = "column";
-      tdRes.style.alignItems = "flex-start";
-
-      const spanR=document.createElement("span");
+      const spanR=document.createElement("div");
       spanR.textContent = resultLabel(rec.result);
       spanR.className = resultClass(rec.result);
-
-      const spanO=document.createElement("span");
+      const spanO=document.createElement("div");
       spanO.textContent = orderLabel(rec.order);
       spanO.className = "tag-order";
-      spanO.style.marginTop = "2px";
-
       tdRes.appendChild(spanR);
       tdRes.appendChild(spanO);
 
@@ -1268,6 +1263,237 @@
     setRateColor("secondRateText", sRate, sTotal>0);
   }
 
+  // 自分の属性 使用率 円グラフ（ポケモンTV風カラー）
+  function renderMyTypePie() {
+    const canvas = document.getElementById("myTypePie");
+    const legend = document.getElementById("myTypeLegend");
+    if (!canvas || !legend) return;
+    const ctx = canvas.getContext("2d");
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = 220;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // 属性集計
+    const countMap = {};
+    TYPE_KEYS.forEach(k => countMap[k] = 0);
+    records.forEach(r => {
+      if (r.type && countMap.hasOwnProperty(r.type)) {
+        countMap[r.type]++;
+      }
+    });
+
+    const types = [];
+    const values = [];
+    Object.keys(countMap).forEach(k => {
+      if (countMap[k] > 0) {
+        types.push(k);
+        values.push(countMap[k]);
+      }
+    });
+
+    if (values.length === 0) {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("まだデッキ属性のデータがありません", 10, canvas.height/2);
+      legend.innerHTML = "";
+      return;
+    }
+
+    const total = values.reduce((a,b)=>a+b,0);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 80;
+    const innerRadius = 45;
+
+    const colors = {
+      fire:      "#EF4444", // 赤
+      water:     "#3B82F6", // 青
+      grass:     "#10B981", // 緑
+      lightning: "#FACC15", // 黄
+      psychic:   "#A855F7", // 紫
+      darkness:  "#111827", // ほぼ黒
+      fighting:  "#F97316", // オレンジ
+      metal:     "#6B7280", // グレー
+      colorless: "#D1D5DB"  // 薄グレー
+    };
+
+    let startAngle = -Math.PI/2;
+    types.forEach((t, idx) => {
+      const value = values[idx];
+      const angle = (value / total) * Math.PI * 2;
+      const endAngle = startAngle + angle;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = colors[t] || "#9CA3AF";
+      ctx.fill();
+
+      startAngle = endAngle;
+    });
+
+    // 内側くり抜き
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    // 中央に合計
+    ctx.fillStyle = "#374151";
+    ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${total}戦`, centerX, centerY);
+
+    // 凡例
+    legend.innerHTML = "";
+    types.forEach((t, idx) => {
+      const value = values[idx];
+      const percent = (value/total*100).toFixed(1);
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "4px";
+
+      const colorBox = document.createElement("div");
+      colorBox.style.width = "12px";
+      colorBox.style.height = "12px";
+      colorBox.style.borderRadius = "3px";
+      colorBox.style.marginRight = "6px";
+      colorBox.style.backgroundColor = colors[t] || "#9CA3AF";
+
+      const icon = document.createElement("img");
+      icon.src = typeIconSrc(t);
+      icon.alt = "";
+      icon.className = "type-icon";
+      icon.style.width = "18px";
+      icon.style.height = "18px";
+      icon.style.marginRight = "4px";
+
+      const text = document.createElement("span");
+      text.textContent = `${TYPE_LABEL[t]}：${value}回（${percent}%）`;
+
+      row.appendChild(colorBox);
+      row.appendChild(icon);
+      row.appendChild(text);
+      legend.appendChild(row);
+    });
+  }
+
+  // AIデッキ予想
+  function renderAIDeckSuggestion() {
+    const el = document.getElementById("aiDeckMessage");
+    if (!el) return;
+
+    if (records.length === 0) {
+      el.textContent = "まだデータが少ないため予想できません。まずは対戦を記録しましょう。";
+      el.style.color = "#6b7280";
+      return;
+    }
+
+    const stats = {};
+    records.forEach(r => {
+      const key = r.myDeck && r.myDeck.trim() ? r.myDeck.trim() : "（名称未入力）";
+      if (!stats[key]) stats[key] = {win:0, lose:0, draw:0, total:0};
+      stats[key].total++;
+      if (r.result === "win") stats[key].win++;
+      else if (r.result === "lose") stats[key].lose++;
+      else if (r.result === "draw") stats[key].draw++;
+    });
+
+    let bestName = null;
+    let bestRate = 0;
+    let bestTotal = 0;
+
+    Object.keys(stats).forEach(name => {
+      const s = stats[name];
+      const battle = s.win + s.lose;
+      if (battle < 5) return; // 5戦未満はサンプル不足として除外
+      const rate = battle === 0 ? 0 : s.win / battle * 100;
+      if (rate > bestRate || (rate === bestRate && battle > bestTotal)) {
+        bestRate = rate;
+        bestName = name;
+        bestTotal = battle;
+      }
+    });
+
+    if (!bestName) {
+      el.textContent = "まだ対戦数が少ないため、はっきりしたおすすめデッキは出せません。各デッキで5戦以上データを貯めてみましょう。";
+      el.style.color = "#6b7280";
+      return;
+    }
+
+    const s = stats[bestName];
+    el.textContent =
+      `次に勝てそうなデッキは「${bestName}」です。勝率は約 ${bestRate.toFixed(1)}％ ` +
+      `（${s.win}勝／${s.win + s.lose}戦、引き分け ${s.draw}）です。`;
+
+    if (bestRate >= 60) {
+      el.style.color = "#2563eb";
+    } else if (bestRate <= 45) {
+      el.style.color = "#dc2626";
+    } else {
+      el.style.color = "#16a34a";
+    }
+  }
+
+  // バックアップ（JSONファイル保存）
+  function backupData() {
+    if (!records.length) {
+      alert("バックアップするデータがありません。");
+      return;
+    }
+    const data = JSON.stringify(records, null, 2);
+    const blob = new Blob([data], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = ("0"+(now.getMonth()+1)).slice(-2);
+    const d = ("0"+now.getDate()).slice(-2);
+    const hh = ("0"+now.getHours()).slice(-2);
+    const mm = ("0"+now.getMinutes()).slice(-2);
+    const ss = ("0"+now.getSeconds()).slice(-2);
+    a.download = `pokepoke_backup_${y}${m}${d}_${hh}${mm}${ss}.json`;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 復元（JSONファイル読み込み）
+  function restoreData() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const loaded = JSON.parse(reader.result);
+          if (!Array.isArray(loaded)) throw new Error("不正な形式");
+          records = loaded;
+          saveData();
+          render();
+          alert("バックアップから復元しました。");
+        } catch (err) {
+          alert("復元に失敗しました。ファイル形式を確認してください。");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    };
+    input.click();
+  }
+
   function render() {
     renderTable();
     renderStats();
@@ -1276,6 +1502,8 @@
     renderDeckStats();
     renderTypeMatrix();
     renderDeckPresets();
+    renderMyTypePie();
+    renderAIDeckSuggestion();
   }
 
   function updateResultColor() {
