@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <title>ポケポケ 勝敗記録</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- iPhoneホーム画面アイコン（icons/app-icon.png を用意するとアイコン付きになる） -->
+  <link rel="apple-touch-icon" href="icons/app-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
@@ -197,6 +201,29 @@
       height: 200px;
       display: block;
     }
+    /* スランプ値の色 */
+    .slump-plus {
+      color: #2563eb;
+      font-weight: bold;
+    }
+    .slump-minus {
+      color: #dc2626;
+      font-weight: bold;
+    }
+    .slump-zero {
+      color: #6b7280;
+    }
+    /* 属性マトリクス用 */
+    #typeMatrixTable th,
+    #typeMatrixTable td {
+      text-align: center;
+      font-size: 11px;
+      padding: 4px;
+    }
+    #deckStatsTable th,
+    #deckStatsTable td {
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -225,7 +252,6 @@
     <div class="row">
       <div>
         <label>自分の属性</label>
-        <!-- 自分の属性：隠し値 -->
         <input type="hidden" id="typeInput">
         <div class="type-picker">
           <div id="selfTypePreview" class="type-preview" onclick="toggleTypePanel('self')">
@@ -266,7 +292,6 @@
 
       <div>
         <label>相手の属性</label>
-        <!-- 相手の属性：隠し値 -->
         <input type="hidden" id="opponentTypeInput">
         <div class="type-picker">
           <div id="oppTypePreview" class="type-preview" onclick="toggleTypePanel('opp')">
@@ -360,6 +385,13 @@
     </div>
   </section>
 
+  <!-- 勝率グラフ -->
+  <section class="card">
+    <h2>勝率の推移</h2>
+    <small>勝ち / 負けのみで計算（引き分けは除外）</small>
+    <canvas id="winrateCanvas"></canvas>
+  </section>
+
   <!-- スランプグラフ -->
   <section class="card">
     <h2>スランプグラフ</h2>
@@ -368,6 +400,39 @@
     <small id="slumpInfo" class="muted"></small><br>
     <small id="streakMax" class="muted"></small><br>
     <small id="streakCurrent" class="muted"></small>
+  </section>
+
+  <!-- デッキ別戦績 -->
+  <section class="card">
+    <h2>デッキ別戦績（自分のデッキ）</h2>
+    <div style="overflow-x:auto;">
+      <table id="deckStatsTable">
+        <thead>
+          <tr>
+            <th>デッキ名</th>
+            <th>対戦数</th>
+            <th>勝</th>
+            <th>負</th>
+            <th>分</th>
+            <th>勝率</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JSで追加 -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 属性×属性 勝率 -->
+  <section class="card">
+    <h2>属性 × 属性 勝率</h2>
+    <small>行：自分の属性 ／ 列：相手の属性</small>
+    <div style="overflow-x:auto;">
+      <table id="typeMatrixTable">
+        <!-- JSで生成 -->
+      </table>
+    </div>
   </section>
 
   <!-- 対戦一覧 -->
@@ -385,6 +450,7 @@
             <th>自分のデッキ</th>
             <th>相手のデッキ</th>
             <th>結果</th>
+            <th>スランプ</th>
             <th>メモ</th>
             <th></th>
           </tr>
@@ -398,6 +464,20 @@
 </main>
 
 <script>
+  // ------------ 定数 ------------
+  const TYPE_KEYS = ["fire","water","grass","lightning","psychic","darkness","fighting","metal","colorless"];
+  const TYPE_LABEL = {
+    fire: "炎",
+    water: "水",
+    grass: "草",
+    lightning: "雷",
+    psychic: "超",
+    darkness: "悪",
+    fighting: "闘",
+    metal: "鋼",
+    colorless: "無"
+  };
+
   // ------------ データ管理 ------------
   let records = [];
 
@@ -446,7 +526,6 @@
     return "tag-draw";
   }
 
-  // 属性→アイコンファイル
   function typeIconSrc(t) {
     if (!t) return null;
     return "icons/" + t + ".png";
@@ -523,15 +602,20 @@
   }
 
   // ------------ スランプ計算 ------------
-  function calcSlumpPoints() {
-    const sorted = records.slice().sort((a,b) => {
-      const ad = a.date || "";
-      const bd = b.date || "";
-      if (ad < bd) return -1;
-      if (ad > bd) return 1;
-      return 0;
-    });
+  function sortedByDateAsc() {
+    return records
+      .slice()
+      .sort((a, b) => {
+        const ad = a.date || "";
+        const bd = b.date || "";
+        if (ad < bd) return -1;
+        if (ad > bd) return 1;
+        return a.id - b.id;
+      });
+  }
 
+  function calcSlumpPoints() {
+    const sorted = sortedByDateAsc();
     let value = 0;
     const points = [];
     for (const r of sorted) {
@@ -542,6 +626,19 @@
     return points;
   }
 
+  // 各試合のスランプ値（id -> value）
+  function calcSlumpMap() {
+    const sorted = sortedByDateAsc();
+    let value = 0;
+    const map = {};
+    for (const r of sorted) {
+      if (r.result === "win") value += 1;
+      else if (r.result === "lose") value -= 1;
+      map[r.id] = value;
+    }
+    return map;
+  }
+
   // 連勝・連敗計算
   function calcStreaks() {
     let maxWin = 0;
@@ -549,33 +646,42 @@
     let curWin = 0;
     let curLose = 0;
 
-    records
-      .slice()
-      .sort((a,b) => {
-        const ad = a.date || "";
-        const bd = b.date || "";
-        if (ad < bd) return -1;
-        if (ad > bd) return 1;
-        return 0;
-      })
-      .forEach(r => {
-        if (r.result === "win") {
-          curWin++;
-          curLose = 0;
-          if (curWin > maxWin) maxWin = curWin;
-        } else if (r.result === "lose") {
-          curLose++;
-          curWin = 0;
-          if (curLose > maxLose) maxLose = curLose;
-        } else {
-          curWin = 0;
-          curLose = 0;
-        }
-      });
+    sortedByDateAsc().forEach(r => {
+      if (r.result === "win") {
+        curWin++;
+        curLose = 0;
+        if (curWin > maxWin) maxWin = curWin;
+      } else if (r.result === "lose") {
+        curLose++;
+        curWin = 0;
+        if (curLose > maxLose) maxLose = curLose;
+      } else {
+        curWin = 0;
+        curLose = 0;
+      }
+    });
 
     return { maxWin, maxLose, curWin, curLose };
   }
 
+  // 勝率グラフ用ポイント（%）
+  function calcWinRatePoints() {
+    const sorted = sortedByDateAsc();
+    let wins = 0;
+    let loses = 0;
+    const points = [];
+
+    for (const r of sorted) {
+      if (r.result === "win") wins++;
+      else if (r.result === "lose") loses++;
+      const battle = wins + loses;
+      const rate = battle === 0 ? 0 : (wins / battle * 100);
+      points.push(rate);
+    }
+    return points;
+  }
+
+  // ------------ スランプグラフ描画 ------------
   function renderSlumpGraph() {
     const canvas = document.getElementById("slumpCanvas");
     const info = document.getElementById("slumpInfo");
@@ -693,7 +799,89 @@
     }
   }
 
-  // ------------ 追加 ------------
+  // ------------ 勝率グラフ描画 ------------
+  function renderWinRateGraph() {
+    const canvas = document.getElementById("winrateCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const points = calcWinRatePoints();
+    if (points.length === 0 || points.every(v => v === 0)) {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("勝ち負けの対戦がまだありません", 10, height / 2);
+      return;
+    }
+
+    const maxVal = Math.max(...points, 100);
+    const minVal = 0;
+    const range = Math.max(maxVal - minVal, 1);
+
+    const padding = 24;
+    const usableW = width - padding * 2;
+    const usableH = height - padding * 2;
+
+    // 背景
+    ctx.fillStyle = "#f9fafb";
+    ctx.fillRect(padding, padding, usableW, usableH);
+
+    // 横グリッド（0,25,50,75,100）
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    const levels = [0,25,50,75,100];
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#6b7280";
+    levels.forEach(lv => {
+      const ratio = (lv - minVal) / range;
+      const y = padding + usableH * (1 - ratio);
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+      ctx.fillText(lv + "%", 4, y + 3);
+    });
+    ctx.setLineDash([]);
+
+    // 座標変換
+    function pointToXY(idx, v) {
+      const ratio = points.length === 1 ? 0.5 : idx / (points.length - 1);
+      const x = padding + usableW * ratio;
+      const yRatio = (v - minVal) / range;
+      const y = padding + usableH * (1 - yRatio);
+      return { x, y };
+    }
+
+    // 線
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach((v, i) => {
+      const { x, y } = pointToXY(i, v);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // 点
+    ctx.fillStyle = "#2563eb";
+    points.forEach((v, i) => {
+      const { x, y } = pointToXY(i, v);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // ------------ 追加／クリア ------------
   function addRecord() {
     const date = document.getElementById("dateInput").value;
     const myDeck = document.getElementById("myDeckInput").value.trim();
@@ -757,80 +945,221 @@
     render();
   }
 
-  // ------------ 表示 ------------
+  // ------------ 表示（履歴・デッキ・属性） ------------
   function renderTable() {
     const tbody = document.querySelector("#recordsTable tbody");
     tbody.innerHTML = "";
 
-    records
-      .slice()
-      .sort((a,b) => (a.date || "") < (b.date || "") ? 1 : -1)
-      .forEach(rec => {
+    if (records.length === 0) {
+      document.getElementById("countText").textContent = "0件";
+      return;
+    }
+
+    // 古い順
+    const sortedAsc = sortedByDateAsc();
+
+    // 戦番号＆スランプ値
+    const slumpMap = {};
+    let slump = 0;
+    sortedAsc.forEach((r, i) => {
+      if (r.result === "win") slump += 1;
+      else if (r.result === "lose") slump -= 1;
+      slumpMap[r.id] = slump;
+      r.battleNumber = i + 1;
+    });
+
+    // 新しい順で表示
+    const sortedDesc = sortedAsc.slice().reverse();
+
+    sortedDesc.forEach(rec => {
+      const tr = document.createElement("tr");
+
+      const tdDate = document.createElement("td");
+      tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
+
+      // 自分のデッキ（アイコン＋名前）
+      const tdMy = document.createElement("td");
+      const spanMy = document.createElement("span");
+      const mySrc = typeIconSrc(rec.type);
+      if (mySrc) {
+        const img = document.createElement("img");
+        img.src = mySrc;
+        img.alt = "";
+        img.className = "type-icon";
+        spanMy.appendChild(img);
+      }
+      spanMy.appendChild(document.createTextNode(rec.myDeck || ""));
+      tdMy.appendChild(spanMy);
+
+      // 相手のデッキ（アイコン＋名前）
+      const tdOpp = document.createElement("td");
+      const spanOpp = document.createElement("span");
+      const oppSrc = typeIconSrc(rec.opponentType);
+      if (oppSrc) {
+        const img2 = document.createElement("img");
+        img2.src = oppSrc;
+        img2.alt = "";
+        img2.className = "type-icon";
+        spanOpp.appendChild(img2);
+      }
+      spanOpp.appendChild(document.createTextNode(rec.opponentDeck || ""));
+      tdOpp.appendChild(spanOpp);
+
+      const tdRes = document.createElement("td");
+      const spanR = document.createElement("span");
+      spanR.textContent = resultLabel(rec.result);
+      spanR.className = resultClass(rec.result);
+      const spanO = document.createElement("span");
+      spanO.textContent = orderLabel(rec.order);
+      spanO.className = "tag-order";
+      tdRes.appendChild(spanR);
+      tdRes.appendChild(spanO);
+
+      // スランプ値
+      const tdSlump = document.createElement("td");
+      const v = slumpMap[rec.id] ?? 0;
+      const sign = v > 0 ? "+" : "";
+      tdSlump.textContent = sign + v;
+      tdSlump.className =
+        v > 0 ? "slump-plus" :
+        v < 0 ? "slump-minus" :
+        "slump-zero";
+
+      const tdMemo = document.createElement("td");
+      tdMemo.textContent = rec.memo;
+
+      const tdDel = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.textContent = "削除";
+      btn.className = "btn-sub";
+      btn.style.fontSize = "11px";
+      btn.onclick = () => deleteRecord(rec.id);
+      tdDel.appendChild(btn);
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdMy);
+      tr.appendChild(tdOpp);
+      tr.appendChild(tdRes);
+      tr.appendChild(tdSlump);
+      tr.appendChild(tdMemo);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("countText").textContent = `${records.length}件`;
+  }
+
+  function renderDeckStats() {
+    const tbody = document.querySelector("#deckStatsTable tbody");
+    tbody.innerHTML = "";
+
+    if (records.length === 0) return;
+
+    const stats = {};
+    records.forEach(r => {
+      const key = r.myDeck || "（名称未入力）";
+      if (!stats[key]) {
+        stats[key] = { win:0, lose:0, draw:0, total:0 };
+      }
+      stats[key].total++;
+      if (r.result === "win") stats[key].win++;
+      else if (r.result === "lose") stats[key].lose++;
+      else if (r.result === "draw") stats[key].draw++;
+    });
+
+    Object.keys(stats)
+      .sort()
+      .forEach(name => {
+        const s = stats[name];
+        const battle = s.win + s.lose;
+        const rate = battle === 0 ? 0 : s.win / battle * 100;
+
         const tr = document.createElement("tr");
+        const tdName = document.createElement("td");
+        tdName.textContent = name;
 
-        const tdDate = document.createElement("td");
-        tdDate.textContent = formatDate(rec.date);
+        const tdTotal = document.createElement("td");
+        tdTotal.textContent = s.total;
 
-        // 自分のデッキ（アイコン＋名前）
-        const tdMy = document.createElement("td");
-        const spanMy = document.createElement("span");
-        const mySrc = typeIconSrc(rec.type);
-        if (mySrc) {
-          const img = document.createElement("img");
-          img.src = mySrc;
-          img.alt = "";
-          img.className = "type-icon";
-          spanMy.appendChild(img);
-        }
-        spanMy.appendChild(document.createTextNode(rec.myDeck || ""));
-        tdMy.appendChild(spanMy);
+        const tdW = document.createElement("td");
+        tdW.textContent = s.win;
 
-        // 相手のデッキ（アイコン＋名前）
-        const tdOpp = document.createElement("td");
-        const spanOpp = document.createElement("span");
-        const oppSrc = typeIconSrc(rec.opponentType);
-        if (oppSrc) {
-          const img2 = document.createElement("img");
-          img2.src = oppSrc;
-          img2.alt = "";
-          img2.className = "type-icon";
-          spanOpp.appendChild(img2);
-        }
-        spanOpp.appendChild(document.createTextNode(rec.opponentDeck || ""));
-        tdOpp.appendChild(spanOpp);
+        const tdL = document.createElement("td");
+        tdL.textContent = s.lose;
 
-        const tdRes = document.createElement("td");
-        const spanR = document.createElement("span");
-        spanR.textContent = resultLabel(rec.result);
-        spanR.className = resultClass(rec.result);
-        const spanO = document.createElement("span");
-        spanO.textContent = orderLabel(rec.order);
-        spanO.className = "tag-order";
-        tdRes.appendChild(spanR);
-        tdRes.appendChild(spanO);
+        const tdD = document.createElement("td");
+        tdD.textContent = s.draw;
 
-        const tdMemo = document.createElement("td");
-        tdMemo.textContent = rec.memo;
+        const tdRate = document.createElement("td");
+        tdRate.textContent = rate.toFixed(1) + "%";
 
-        const tdDel = document.createElement("td");
-        const btn = document.createElement("button");
-        btn.textContent = "削除";
-        btn.className = "btn-sub";
-        btn.style.fontSize = "11px";
-        btn.onclick = () => deleteRecord(rec.id);
-        tdDel.appendChild(btn);
-
-        tr.appendChild(tdDate);
-        tr.appendChild(tdMy);
-        tr.appendChild(tdOpp);
-        tr.appendChild(tdRes);
-        tr.appendChild(tdMemo);
-        tr.appendChild(tdDel);
+        tr.appendChild(tdName);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdW);
+        tr.appendChild(tdL);
+        tr.appendChild(tdD);
+        tr.appendChild(tdRate);
 
         tbody.appendChild(tr);
       });
+  }
 
-    document.getElementById("countText").textContent = `${records.length}件`;
+  function typeHeaderHTML(key) {
+    const src = typeIconSrc(key);
+    const label = TYPE_LABEL[key] || "";
+    return `<img src="${src}" class="type-icon" alt="">${label}`;
+  }
+
+  function renderTypeMatrix() {
+    const table = document.getElementById("typeMatrixTable");
+    if (!table) return;
+
+    if (records.length === 0) {
+      table.innerHTML = "<tbody><tr><td class='muted'>まだデータがありません</td></tr></tbody>";
+      return;
+    }
+
+    const matrix = {};
+    records.forEach(r => {
+      const self = r.type;
+      const opp = r.opponentType;
+      if (!self || !opp) return;
+      const key = self + "|" + opp;
+      if (!matrix[key]) {
+        matrix[key] = { win:0, lose:0, draw:0, total:0 };
+      }
+      matrix[key].total++;
+      if (r.result === "win") matrix[key].win++;
+      else if (r.result === "lose") matrix[key].lose++;
+      else if (r.result === "draw") matrix[key].draw++;
+    });
+
+    let html = "<thead><tr><th>自＼相</th>";
+    TYPE_KEYS.forEach(k => {
+      html += `<th>${typeHeaderHTML(k)}</th>`;
+    });
+    html += "</tr></thead><tbody>";
+
+    TYPE_KEYS.forEach(selfKey => {
+      html += "<tr>";
+      html += `<th>${typeHeaderHTML(selfKey)}</th>`;
+      TYPE_KEYS.forEach(oppKey => {
+        const key = selfKey + "|" + oppKey;
+        const cell = matrix[key];
+        if (!cell || cell.total === 0) {
+          html += "<td>－</td>";
+        } else {
+          const battle = cell.win + cell.lose;
+          const rate = battle === 0 ? 0 : (cell.win / battle * 100);
+          html += `<td>${rate.toFixed(1)}%<br>(${cell.win}/${cell.total})</td>`;
+        }
+      });
+      html += "</tr>";
+    });
+
+    html += "</tbody>";
+    table.innerHTML = html;
   }
 
   function renderStats() {
@@ -870,7 +1199,10 @@
   function render() {
     renderTable();
     renderStats();
+    renderWinRateGraph();
     renderSlumpGraph();
+    renderDeckStats();
+    renderTypeMatrix();
   }
 
   // 初期化
