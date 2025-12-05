@@ -244,19 +244,9 @@
       </div>
       <div>
         <label>自分のデッキ</label>
-        <!-- プルダウン（任意） -->
+        <!-- 履歴から選ぶプルダウン（中身はJSで自動生成） -->
         <select id="myDeckPreset" onchange="applyDeckPreset('my')">
-          <option value="">▼ プルダウンから選択（任意）</option>
-          <option value="メガバーシャモ">メガバーシャモ</option>
-          <option value="ガブリアス">ガブリアス</option>
-          <option value="カメックス">カメックス</option>
-          <option value="メガアブソル">メガアブソル</option>
-          <option value="ミュウツー">ミュウツー</option>
-          <option value="リザードン">リザードン</option>
-          <option value="サーナイト">サーナイト</option>
-          <option value="ゲッコウガ">ゲッコウガ</option>
-          <option value="ピカチュウ">ピカチュウ</option>
-          <option value="その他">その他</option>
+          <option value="">▼ 履歴から選択（任意）</option>
         </select>
         <!-- 自由入力 -->
         <input type="text" id="myDeckInput" placeholder="例）エビワラー" />
@@ -264,19 +254,9 @@
     </div>
 
     <label>相手のデッキ</label>
-    <!-- プルダウン（任意） -->
+    <!-- 履歴から選ぶプルダウン（中身はJSで自動生成） -->
     <select id="opponentDeckPreset" onchange="applyDeckPreset('opp')">
-      <option value="">▼ プルダウンから選択（任意）</option>
-      <option value="メガバーシャモ">メガバーシャモ</option>
-      <option value="ガブリアス">ガブリアス</option>
-      <option value="カメックス">カメックス</option>
-      <option value="メガアブソル">メガアブソル</option>
-      <option value="ミュウツー">ミュウツー</option>
-      <option value="リザードン">リザードン</option>
-      <option value="サーナイト">サーナイト</option>
-      <option value="ゲッコウガ">ゲッコウガ</option>
-      <option value="ピカチュウ">ピカチュウ</option>
-      <option value="その他">その他</option>
+      <option value="">▼ 履歴から選択（任意）</option>
     </select>
     <!-- 自由入力 -->
     <input type="text" id="opponentDeckInput" placeholder="例）水デッキ" />
@@ -420,14 +400,14 @@
   <!-- 勝率グラフ -->
   <section class="card">
     <h2>勝率の推移</h2>
-    <small>勝ち / 負けのみで計算（引き分けは除外）｜下の数字は「何戦目」</small>
+    <small>勝ち / 負けのみで計算（引き分けは除外）｜下の数字は「何戦目」｜50％ライン濃い線：上＝青／下＝赤</small>
     <canvas id="winrateCanvas"></canvas>
   </section>
 
   <!-- スランプグラフ -->
   <section class="card">
     <h2>スランプグラフ</h2>
-    <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）｜下の数字は「何戦目」</small>
+    <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）｜下の数字は「何戦目」｜0ライン濃い線：上＝青／下＝赤</small>
     <canvas id="slumpCanvas"></canvas>
     <small id="slumpInfo" class="muted"></small><br>
     <small id="streakMax" class="muted"></small><br>
@@ -575,6 +555,37 @@
       const val = sel.value;
       if (val) document.getElementById("opponentDeckInput").value = val;
     }
+  }
+
+  // 履歴からプルダウンを自動生成
+  function renderDeckPresets() {
+    const mySel = document.getElementById("myDeckPreset");
+    const oppSel = document.getElementById("opponentDeckPreset");
+    if (!mySel || !oppSel) return;
+
+    const mySet = new Set();
+    const oppSet = new Set();
+    records.forEach(r => {
+      if (r.myDeck && r.myDeck.trim()) mySet.add(r.myDeck.trim());
+      if (r.opponentDeck && r.opponentDeck.trim()) oppSet.add(r.opponentDeck.trim());
+    });
+
+    function fillSelect(sel, set, placeholder) {
+      sel.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = placeholder;
+      sel.appendChild(opt0);
+      Array.from(set).sort().forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+
+    fillSelect(mySel, mySet, "▼ 履歴から選択（任意）");
+    fillSelect(oppSel, oppSet, "▼ 履歴から選択（任意）");
   }
 
   // ------------ アイコンパネル制御 ------------
@@ -814,7 +825,7 @@
       return { x, y };
     }
 
-    // 線
+    // 線（平均が0以上＝青／0未満＝赤）
     ctx.lineWidth = 2;
     for (let i = 1; i < points.length; i++) {
       const v1 = points[i - 1];
@@ -841,7 +852,7 @@
       ctx.fill();
     }
 
-    // X軸に「何戦目」を表示
+    // X軸に「何戦目」
     ctx.fillStyle = "#6b7280";
     ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
     for (let i = 0; i < points.length; i++) {
@@ -884,7 +895,7 @@
     ctx.fillStyle = "#f9fafb";
     ctx.fillRect(padding, padding, usableW, usableH);
 
-    // 横グリッド（0,25,50,75,100）
+    // 横グリッド（0,25,50,75,100） 50％ラインだけ濃く
     const levels = [0,25,50,75,100];
     ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "#6b7280";
@@ -893,10 +904,10 @@
       const ratio = (lv - minVal) / range;
       const y = padding + usableH * (1 - ratio);
 
-      if (lv === 0) {
+      if (lv === 50) {
         ctx.setLineDash([]);
         ctx.strokeStyle = "#4b5563";
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3;
       } else {
         ctx.setLineDash([4, 4]);
         ctx.strokeStyle = "#e5e7eb";
@@ -919,23 +930,28 @@
       return { x, y };
     }
 
-    // 線
-    ctx.strokeStyle = "#2563eb";
+    // 線（50%以上＝青／未満＝赤）
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((v, i) => {
-      const { x, y } = pointToXY(i, v);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    for (let i = 1; i < points.length; i++) {
+      const v1 = points[i - 1];
+      const v2 = points[i];
+      const { x: x1, y: y1 } = pointToXY(i - 1, v1);
+      const { x: x2, y: y2 } = pointToXY(i, v2);
+      const avg = (v1 + v2) / 2;
+      ctx.strokeStyle = avg >= 50 ? "#2563eb" : "#dc2626";
 
-    // 点
-    ctx.fillStyle = "#2563eb";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    // 点（50%以上＝青／未満＝赤）
     points.forEach((v, i) => {
       const { x, y } = pointToXY(i, v);
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = v >= 50 ? "#2563eb" : "#dc2626";
       ctx.fill();
     });
 
@@ -958,8 +974,6 @@
     const result = document.getElementById("resultInput").value;
     const order = document.getElementById("orderInput").value;
     const memo = document.getElementById("memoInput").value.trim();
-
-    // デッキ名は「未記入でもOK」にしたのでバリデーションなし
 
     if (editingId !== null) {
       // 既存レコード更新
@@ -1317,6 +1331,7 @@
     renderSlumpGraph();
     renderDeckStats();
     renderTypeMatrix();
+    renderDeckPresets(); // ← 履歴からプルダウンを更新
   }
 
   // 初期化
