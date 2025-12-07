@@ -4,185 +4,399 @@
   <meta charset="UTF-8" />
   <title>ポケポケ 最強デッキ一覧（Tier表）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       margin: 0;
       padding: 0;
       background: #f4f6fb;
+      color: #111827;
     }
     header {
       background: #2563eb;
-      color: white;
+      color: #fff;
       padding: 12px 16px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
     }
-    header button {
-      border: none;
-      border-radius: 999px;
-      padding: 6px 12px;
+    header a {
+      color: #dbeafe;
       font-size: 13px;
-      cursor: pointer;
-      background: #1d4ed8;
-      color: #e5e7eb;
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.25);
     }
     main {
       padding: 12px 16px 40px;
-      max-width: 900px;
+      max-width: 1024px;
       margin: 0 auto;
     }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .card h2 {
-      margin: 0 0 6px;
-      font-size: 16px;
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 8px 0 4px;
     }
     .muted {
+      font-size: 12px;
       color: #6b7280;
-      font-size: 12px;
     }
-    .tier-tag {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .tier-1 { background:#fee2e2; color:#b91c1c; }
-    .tier-2 { background:#ffedd5; color:#c2410c; }
-    .tier-3 { background:#fef3c7; color:#92400e; }
-    .tier-4 { background:#e0f2fe; color:#1d4ed8; }
-    .tier-5 { background:#e5e7eb; color:#374151; }
 
-    .deck-list {
-      list-style: none;
-      padding-left: 0;
-      margin: 4px 0 0;
-      font-size: 14px;
+    /* タブ（Tier 切替） */
+    .tier-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0 14px;
+      flex-wrap: wrap;
     }
-    .deck-list li {
-      padding: 4px 0;
-      border-bottom: 1px dashed #e5e7eb;
+    .tier-tab-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #374151;
     }
-    .deck-name-main {
-      font-weight: bold;
+    .tier-tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 0 0 1px #1d4ed8;
     }
-    .note {
+
+    /* デッキカードのグリッド */
+    .deck-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    /* ★ カード風デザイン本体 ★ */
+    .deck-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 10px 12px;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.10);
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .deck-card::before {
+      /* 上部にうっすら光りの帯 */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(96,165,250,0.28), transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .deck-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+    .deck-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .tier-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 700;
+    }
+    .tier-ss {
+      background: linear-gradient(135deg, #f97316, #facc15);
+      box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.6);
+    }
+    .tier-s {
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+    }
+    .tier-a {
+      background: linear-gradient(135deg, #10b981, #22c55e);
+    }
+
+    .deck-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: 11px;
+      position: relative;
+      z-index: 1;
+    }
+    .deck-tag {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    /* 属性アイコン列（カード風の中） */
+    .type-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+      z-index: 1;
+    }
+    .type-label {
       font-size: 11px;
       color: #6b7280;
-      margin-top: 4px;
+      margin-right: 2px;
     }
-    a {
+    .type-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .deck-body {
+      font-size: 12px;
+      color: #4b5563;
+      position: relative;
+      z-index: 1;
+    }
+
+    .deck-footer {
+      margin-top: 2px;
+      font-size: 11px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .small-link {
       color: #2563eb;
       text-decoration: none;
+      font-size: 11px;
     }
-    a:hover {
+    .small-link:hover {
       text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     }
   </style>
 </head>
 <body>
 <header>
-  <button onclick="location.href='index.html'">← 勝敗記録へ戻る</button>
-  ポケポケ 最強デッキ一覧（Tier表）
+  <div>ポケポケ 最強デッキ一覧（Tier表）</div>
+  <!-- トップページ（pokepoke）への戻るリンク -->
+  <a href="./">← 勝敗記録に戻る</a>
 </header>
 
 <main>
-  <section class="card">
-    <h2>このページについて</h2>
-    <p class="muted">
-      GameWithの
-      <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" rel="noopener">
-        ポケポケ最強デッキランキング（Tier表）
-      </a>
-      を参考に、Tier1〜Tier5のデッキをまとめた一覧ページです。
-      ※自動更新ではありません（手動更新）。
-    </p>
+  <h1 class="section-title">環境トップクラスのデッキ一覧</h1>
+  <p class="muted">
+    GameWith の解説（
+    <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">参考サイト</a>
+    ）などをもとにした「目安」です。<br>
+    実際の環境・アップデートで評価は変わるので、自分の体感に合わせて書き換えて使ってください。
+  </p>
+
+  <!-- Tier タブ -->
+  <div class="tier-tabs">
+    <button class="tier-tab-btn active" data-tier="all" onclick="filterTier('all')">すべて</button>
+    <button class="tier-tab-btn" data-tier="SS" onclick="filterTier('SS')">SSランク</button>
+    <button class="tier-tab-btn" data-tier="S" onclick="filterTier('S')">Sランク</button>
+    <button class="tier-tab-btn" data-tier="A" onclick="filterTier('A')">Aランク</button>
+  </div>
+
+  <!-- デッキカード一覧 -->
+  <section class="deck-grid" id="deckGrid">
+    <!-- SSランク例 -->
+    <article class="deck-card" data-tier="SS">
+      <div class="deck-header">
+        <div class="deck-name">炎エビワラー ビート</div>
+        <div class="tier-badge tier-ss">SS</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">高速ビート</span>
+        <span class="deck-tag">初心者でも扱いやすい</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/fire.png" alt="炎" class="type-icon">
+        <img src="icons/fighting.png" alt="闘" class="type-icon">
+      </div>
+      <p class="deck-body">
+        低コストのアタッカーで序盤から攻め続けるタイプ。手札管理がシンプルで、
+        「テンポよく殴りたい人」に向いています。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：かんたん〜ふつう</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <article class="deck-card" data-tier="SS">
+      <div class="deck-header">
+        <div class="deck-name">水パルキアex コントロール</div>
+        <div class="tier-badge tier-ss">SS</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">盤面制圧</span>
+        <span class="deck-tag">中〜上級者向け</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/water.png" alt="水" class="type-icon">
+      </div>
+      <p class="deck-body">
+        盤面を広げつつ、一気に高打点で取り切るタイプ。山札管理や盤面の枚数計算が重要になります。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：むずかしい</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <!-- Sランク例 -->
+    <article class="deck-card" data-tier="S">
+      <div class="deck-header">
+        <div class="deck-name">雷ライチュウex 展開デッキ</div>
+        <div class="tier-badge tier-s">S</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">展開力重視</span>
+        <span class="deck-tag">サイドレースに強い</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/lightning.png" alt="雷" class="type-icon">
+      </div>
+      <p class="deck-body">
+        ベンチを広げて大ダメージを狙う雷デッキ。中盤以降の爆発力が高く、
+        山札圧縮やサポート管理がカギになります。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：ふつう</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <article class="deck-card" data-tier="S">
+      <div class="deck-header">
+        <div class="deck-name">悪バンギラスex パワー型</div>
+        <div class="tier-badge tier-s">S</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">高火力</span>
+        <span class="deck-tag">盤面取り返し力◎</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/darkness.png" alt="悪" class="type-icon">
+        <img src="icons/fighting.png" alt="闘" class="type-icon">
+      </div>
+      <p class="deck-body">
+        一撃の火力で相手をねじ伏せるパワー型。エネルギー加速とリソース管理が噛み合うと、
+        一気に試合を決められます。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：ふつう〜むずかしい</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <!-- Aランク例 -->
+    <article class="deck-card" data-tier="A">
+      <div class="deck-header">
+        <div class="deck-name">草フシギバナ 系統</div>
+        <div class="tier-badge tier-a">A</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">安定感重視</span>
+        <span class="deck-tag">回復・耐久寄り</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/grass.png" alt="草" class="type-icon">
+      </div>
+      <p class="deck-body">
+        回復や耐久で粘りながら戦う草タイプデッキ。長期戦が得意で、
+        コントロール寄りのプレイが好きな人向けです。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：ふつう</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <article class="deck-card" data-tier="A">
+      <div class="deck-header">
+        <div class="deck-name">超ミュウツー コントロール</div>
+        <div class="tier-badge tier-a">A</div>
+      </div>
+      <div class="deck-tags">
+        <span class="deck-tag">手札干渉</span>
+        <span class="deck-tag">盤面コントロール</span>
+      </div>
+      <div class="type-row">
+        <span class="type-label">主な属性：</span>
+        <img src="icons/psychic.png" alt="超" class="type-icon">
+      </div>
+      <p class="deck-body">
+        相手の手札や盤面をコントロールしながら、じわじわ有利を作るデッキ。
+        プレイングで差が出やすい上級者向けタイプです。
+      </p>
+      <div class="deck-footer">
+        <span>想定プレイ難易度：むずかしい</span>
+        <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" class="small-link">詳細解説を見る</a>
+      </div>
+    </article>
+
+    <!-- ここから下に、自分で好きなデッキカードをコピペ追加してOK -->
   </section>
 
-  <!-- Tier 1 -->
-  <section class="card">
-    <div class="tier-tag tier-1">Tier 1（環境トップ）</div>
-    <ul class="deck-list">
-      <li><span class="deck-name-main">スイクンex</span></li>
-      <li><span class="deck-name-main">サザンドラ</span></li>
-    </ul>
-    <p class="note">現環境で最も強いとされている2大デッキ。</p>
-  </section>
-
-  <!-- Tier 2 -->
-  <section class="card">
-    <div class="tier-tag tier-2">Tier 2</div>
-    <ul class="deck-list">
-      <li><span class="deck-name-main">ジバコイル</span></li>
-      <li><span class="deck-name-main">メガチルタリスex</span></li>
-      <li><span class="deck-name-main">メガアブソルex</span></li>
-      <li><span class="deck-name-main">メガバシャーモex</span></li>
-      <li><span class="deck-name-main">ゲッコウガ</span></li>
-    </ul>
-  </section>
-
-  <!-- Tier 3 -->
-  <section class="card">
-    <div class="tier-tag tier-3">Tier 3</div>
-    <ul class="deck-list">
-      <li><span class="deck-name-main">ギラティナex</span></li>
-      <li><span class="deck-name-main">クロバットex</span></li>
-      <li><span class="deck-name-main">ジュナイパーex</span></li>
-      <li><span class="deck-name-main">ウツロイド</span></li>
-      <li><span class="deck-name-main">エーフィex</span></li>
-    </ul>
-  </section>
-
-  <!-- Tier 4 -->
-  <section class="card">
-    <div class="tier-tag tier-4">Tier 4</div>
-    <ul class="deck-list">
-      <li><span class="deck-name-main">サンダースex</span></li>
-      <li><span class="deck-name-main">シルヴァディ</span></li>
-      <li><span class="deck-name-main">レントラー(MR)</span></li>
-      <li><span class="deck-name-main">チルタリス</span></li>
-      <li><span class="deck-name-main">ウツボット</span></li>
-    </ul>
-  </section>
-
-  <!-- Tier 5 -->
-  <section class="card">
-    <div class="tier-tag tier-5">Tier 5</div>
-    <ul class="deck-list">
-      <li><span class="deck-name-main">ブースターex</span></li>
-      <li><span class="deck-name-main">ブラッキーex</span></li>
-      <li><span class="deck-name-main">ラムパルド</span></li>
-      <li><span class="deck-name-main">メガデンリュウex</span></li>
-      <li><span class="deck-name-main">イエッサンex</span></li>
-      <li><span class="deck-name-main">ソルガレオex</span></li>
-      <li><span class="deck-name-main">カプ・コケコex</span></li>
-      <li><span class="deck-name-main">セレビィ</span></li>
-      <li><span class="deck-name-main">クロバット</span></li>
-    </ul>
-  </section>
-
-  <section class="card">
-    <h2>元記事へのリンク</h2>
-    <p class="muted">
-      詳しいデッキレシピ・環境解説・採用カードなどは、必ず元記事を参照してください。<br>
-      👉 
-      <a href="https://gamewith.jp/pokemon-tcg-pocket/462534" target="_blank" rel="noopener">
-        GameWith：ポケポケ最強デッキランキング｜Tier表
-      </a>
-    </p>
-  </section>
+  <p class="muted" style="margin-top:16px;">
+    ※ このページ（tier.html）は静的なメモ用です。<br>
+    デッキ名・Tier・説明文は自由に書き換えて、自分専用の「環境メモ帳」として使ってください。
+  </p>
 </main>
 
+<script>
+  // Tierフィルタ
+  function filterTier(tier) {
+    const cards = document.querySelectorAll(".deck-card");
+    cards.forEach(card => {
+      const t = card.getAttribute("data-tier");
+      if (tier === "all" || t === tier) {
+        card.style.display = "";
+      } else {
+        card.style.display = "none";
+      }
+    });
+
+    const buttons = document.querySelectorAll(".tier-tab-btn");
+    buttons.forEach(btn => {
+      if (btn.getAttribute("data-tier") === tier) {
+        btn.classList.add("active");
+      } else if (tier === "all" && btn.getAttribute("data-tier") === "all") {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+</script>
 </body>
 </html>
