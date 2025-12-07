@@ -411,6 +411,30 @@
     </div>
   </section>
 
+  <!-- 直近10戦サマリー（追加） -->
+  <section class="card">
+    <h2>直近10戦サマリー</h2>
+    <small>最新の10戦（足りない場合はある分だけ）を対象にした成績</small>
+    <div class="stats-grid" style="margin-top:6px;">
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 成績</div>
+        <div class="stat-main" id="recentTotalText">0戦</div>
+        <div class="stat-sub" id="recentWLText">勝0 / 負0 / 分0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 勝率</div>
+        <div class="stat-main" id="recentWinRateText">0.0%</div>
+        <div class="stat-sub">（勝 / （勝+負））</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 先攻 / 後攻</div>
+        <div class="stat-sub" id="recentFirstSecondText">
+          先攻: 0勝0敗 / 後攻: 0勝0敗
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 勝率グラフ -->
   <section class="card">
     <h2>勝率の推移</h2>
@@ -665,6 +689,13 @@
       if (ad > bd) return 1;
       return (a.id||0)-(b.id||0);
     });
+  }
+
+  // 直近N戦を取得
+  function getRecentRecords(n) {
+    const sorted = sortedByDateAsc();
+    if (sorted.length <= n) return sorted;
+    return sorted.slice(sorted.length - n);
   }
 
   function calcSlumpPoints() {
@@ -949,7 +980,7 @@
     });
   }
 
-  // ★ デッキ名は空でもOKに変更
+  // ★ デッキ名は空でもOK
   function addRecord() {
     const date = document.getElementById("dateInput").value;
     const myDeck = document.getElementById("myDeckInput").value.trim();
@@ -1266,6 +1297,45 @@
     setRateColor("secondRateText", sRate, sTotal>0);
   }
 
+  // 直近10戦サマリー
+  function renderRecentStats() {
+    const elTotal = document.getElementById("recentTotalText");
+    const elWL = document.getElementById("recentWLText");
+    const elRate = document.getElementById("recentWinRateText");
+    const elFS = document.getElementById("recentFirstSecondText");
+    if (!elTotal || !elWL || !elRate || !elFS) return;
+
+    if (records.length === 0) {
+      elTotal.textContent = "0戦";
+      elWL.textContent = "勝0 / 負0 / 分0";
+      elRate.textContent = "0.0%";
+      elRate.style.color = "#6b7280";
+      elFS.textContent = "先攻: 0勝0敗 / 後攻: 0勝0敗";
+      return;
+    }
+
+    const recent = getRecentRecords(10);
+    const wins = recent.filter(r=>r.result==="win").length;
+    const loses = recent.filter(r=>r.result==="lose").length;
+    const draws = recent.filter(r=>r.result==="draw").length;
+    const total = recent.length;
+    const battle = wins + loses;
+    const winRate = battle===0?0:(wins/battle*100);
+
+    elTotal.textContent = `${total}戦`;
+    elWL.textContent = `勝${wins} / 負${loses} / 分${draws}`;
+    elRate.textContent = winRate.toFixed(1) + "%";
+    setRateColor("recentWinRateText", winRate, battle>0);
+
+    const first = recent.filter(r=>r.order==="first");
+    const second = recent.filter(r=>r.order==="second");
+    const fW = first.filter(r=>r.result==="win").length;
+    const fL = first.filter(r=>r.result==="lose").length;
+    const sW = second.filter(r=>r.result==="win").length;
+    const sL = second.filter(r=>r.result==="lose").length;
+    elFS.textContent = `先攻: ${fW}勝${fL}敗 / 後攻: ${sW}勝${sL}敗`;
+  }
+
   function renderMyTypePie() {
     const canvas = document.getElementById("myTypePie");
     const legend = document.getElementById("myTypeLegend");
@@ -1383,6 +1453,7 @@
     });
   }
 
+  // AIおすすめ（デッキ＋属性）
   function renderAIDeckSuggestion() {
     const el = document.getElementById("aiDeckMessage");
     if (!el) return;
@@ -1393,6 +1464,7 @@
       return;
     }
 
+    // デッキ名ごとの統計
     const stats = {};
     records.forEach(r => {
       const key = (r.myDeck && r.myDeck.trim()) ? r.myDeck.trim() : "（名称未入力）";
@@ -1419,20 +1491,71 @@
       }
     });
 
-    if (!bestName) {
-      el.textContent = "まだ対戦数が少ないため、はっきりしたおすすめデッキは出せません。各デッキで5戦以上データを貯めてみましょう。";
+    // 属性ごとの統計
+    const typeStats = {};
+    records.forEach(r => {
+      if (!r.type) return;
+      const key = r.type;
+      if (!typeStats[key]) typeStats[key] = {win:0, lose:0, draw:0, total:0};
+      typeStats[key].total++;
+      if (r.result === "win") typeStats[key].win++;
+      else if (r.result === "lose") typeStats[key].lose++;
+      else if (r.result === "draw") typeStats[key].draw++;
+    });
+
+    let bestType = null;
+    let bestTypeRate = 0;
+    let bestTypeTotal = 0;
+
+    Object.keys(typeStats).forEach(typeKey => {
+      const s = typeStats[typeKey];
+      const battle = s.win + s.lose;
+      if (battle < 5) return;
+      const rate = battle === 0 ? 0 : s.win / battle * 100;
+      if (rate > bestTypeRate || (rate === bestTypeRate && battle > bestTypeTotal)) {
+        bestType = typeKey;
+        bestTypeRate = rate;
+        bestTypeTotal = battle;
+      }
+    });
+
+    if (!bestName && !bestType) {
+      el.textContent = "まだ対戦数が少ないため、はっきりしたおすすめデッキは出せません。各デッキ・属性で5戦以上データを貯めてみましょう。";
       el.style.color = "#6b7280";
       return;
     }
 
-    const s = stats[bestName];
-    el.textContent =
-      `次に勝てそうなデッキは「${bestName}」です。勝率は約 ${bestRate.toFixed(1)}％ ` +
-      `（${s.win}勝／${s.win + s.lose}戦、引き分け ${s.draw}）です。`;
+    let msg = "";
+    let baseRate = 0;
 
-    if (bestRate >= 60) {
+    if (bestName) {
+      const s = stats[bestName];
+      msg +=
+        `次に勝てそうなデッキは「${bestName}」です。勝率は約 ${bestRate.toFixed(1)}％` +
+        `（${s.win}勝／${s.win + s.lose}戦、引き分け ${s.draw}）です。`;
+      baseRate = bestRate;
+    }
+
+    if (bestType) {
+      const st = typeStats[bestType];
+      const label = TYPE_LABEL[bestType] || bestType;
+      const battle = st.win + st.lose;
+      const typeMsg =
+        `属性だけで見ると「${label}」デッキが好調で、勝率は約 ${bestTypeRate.toFixed(1)}％` +
+        `（${st.win}勝／${battle}戦、引き分け ${st.draw}）です。`;
+      if (msg) {
+        msg += "<br>" + typeMsg;
+      } else {
+        msg = typeMsg;
+        baseRate = bestTypeRate;
+      }
+    }
+
+    el.innerHTML = msg;
+
+    if (baseRate >= 60) {
       el.style.color = "#2563eb";
-    } else if (bestRate <= 45) {
+    } else if (baseRate <= 45) {
       el.style.color = "#dc2626";
     } else {
       el.style.color = "#16a34a";
@@ -1492,6 +1615,7 @@
   function render() {
     renderTable();
     renderStats();
+    renderRecentStats();   // ★ 直近10戦のサマリを追加描画
     renderWinRateGraph();
     renderSlumpGraph();
     renderDeckStats();
