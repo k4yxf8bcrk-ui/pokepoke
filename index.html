@@ -411,7 +411,7 @@
     </div>
   </section>
 
-  <!-- 直近10戦サマリー（追加） -->
+  <!-- 直近10戦サマリー -->
   <section class="card">
     <h2>直近10戦サマリー</h2>
     <small>最新の10戦（足りない場合はある分だけ）を対象にした成績</small>
@@ -532,6 +532,32 @@
     lightning: "雷", psychic: "超", darkness: "悪",
     fighting: "闘", metal: "鋼", colorless: "無"
   };
+
+  // デッキ名 + 属性アイコンを1つのセルに表示
+  function createDeckCell(deckName, typeKey) {
+    const td = document.createElement("td");
+
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    wrap.style.gap = "4px";
+
+    const src = typeIconSrc(typeKey);
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.className = "type-icon";
+      wrap.appendChild(img);
+    }
+
+    const span = document.createElement("span");
+    span.textContent = deckName || "";
+    wrap.appendChild(span);
+
+    td.appendChild(wrap);
+    return td;
+  }
 
   let records = [];
   let editingId = null;
@@ -980,7 +1006,7 @@
     });
   }
 
-  // ★ デッキ名は空でもOK
+  // デッキ名は空でもOK
   function addRecord() {
     const date = document.getElementById("dateInput").value;
     const myDeck = document.getElementById("myDeckInput").value.trim();
@@ -1074,6 +1100,7 @@
     render();
   }
 
+  // 対戦履歴テーブル（属性アイコン付き）
   function renderTable() {
     const tbody = document.querySelector("#recordsTable tbody");
     tbody.innerHTML = "";
@@ -1087,19 +1114,17 @@
     sortedDesc.forEach(rec=>{
       const tr = document.createElement("tr");
 
+      // 日付 + 何戦目
       const tdDate=document.createElement("td");
       tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      const tdMy=document.createElement("td");
-      const spanMy=document.createElement("span");
-      spanMy.appendChild(document.createTextNode(rec.myDeck||""));
-      tdMy.appendChild(spanMy);
+      // 自分のデッキ（属性アイコン付き）
+      const tdMy = createDeckCell(rec.myDeck, rec.type);
 
-      const tdOpp=document.createElement("td");
-      const spanOpp=document.createElement("span");
-      spanOpp.appendChild(document.createTextNode(rec.opponentDeck||""));
-      tdOpp.appendChild(spanOpp);
+      // 相手のデッキ（属性アイコン付き）
+      const tdOpp = createDeckCell(rec.opponentDeck, rec.opponentType);
 
+      // 結果（勝ち／負け／分 + 先攻・後攻）
       const tdRes=document.createElement("td");
       tdRes.style.textAlign = "center";
       const spanR=document.createElement("div");
@@ -1111,15 +1136,18 @@
       tdRes.appendChild(spanR);
       tdRes.appendChild(spanO);
 
+      // スランプ値
       const tdSlump=document.createElement("td");
       const v = slumpMap[rec.id] ?? 0;
       const sign = v>0?"+":"";
       tdSlump.textContent = sign+v;
       tdSlump.className = v>0?"slump-plus":v<0?"slump-minus":"slump-zero";
 
+      // メモ
       const tdMemo=document.createElement("td");
       tdMemo.textContent = rec.memo || "";
 
+      // 編集・削除ボタン
       const tdAct=document.createElement("td");
       const editBtn=document.createElement("button");
       editBtn.textContent="編集";
@@ -1615,7 +1643,7 @@
   function render() {
     renderTable();
     renderStats();
-    renderRecentStats();   // ★ 直近10戦のサマリを追加描画
+    renderRecentStats();   // 直近10戦
     renderWinRateGraph();
     renderSlumpGraph();
     renderDeckStats();
