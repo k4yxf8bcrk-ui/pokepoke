@@ -158,26 +158,6 @@
       margin-right: 4px;
       vertical-align: middle;
     }
-
-    /* ★ デッキ名＋属性を「カード風」にする */
-    .deck-card {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      max-width: 180px;
-      box-sizing: border-box;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .deck-card span {
-      font-size: 12px;
-    }
-
     .type-preview {
       margin-top: 4px;
       font-size: 12px;
@@ -411,7 +391,7 @@
     </small>
   </section>
 
-  <!-- 成績サマリ -->
+  <!-- 成績サマリー -->
   <section class="card">
     <h2>成績サマリー</h2>
     <div class="stats-grid">
@@ -436,6 +416,13 @@
         <div class="stat-sub" id="secondDetailText">0勝 0敗</div>
       </div>
     </div>
+    <!-- ★ 先攻・後攻の回数＆勝率を追加表示 -->
+    <small id="orderCountText" class="muted">
+      先攻0回 / 後攻0回
+    </small><br>
+    <small id="orderRateText" class="muted">
+      先攻0.0% / 後攻0.0%
+    </small>
   </section>
 
   <!-- 直近10戦サマリー -->
@@ -560,12 +547,14 @@
     fighting: "闘", metal: "鋼", colorless: "無"
   };
 
-  // デッキ名 + 属性アイコンを1つの「カード風」セルに表示
+  // デッキ名 + 属性アイコンを1つのセルに表示（元のシンプル版）
   function createDeckCell(deckName, typeKey) {
     const td = document.createElement("td");
 
     const wrap = document.createElement("div");
-    wrap.className = "deck-card";
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    wrap.style.gap = "4px";
 
     const src = typeIconSrc(typeKey);
     if (src) {
@@ -1348,6 +1337,19 @@
 
     setRateColor("firstRateText", fRate, fTotal>0);
     setRateColor("secondRateText", sRate, sTotal>0);
+
+    // ★ 成績サマリー下の「回数」と「勝率」のテキスト更新
+    const orderCountEl = document.getElementById("orderCountText");
+    const orderRateEl = document.getElementById("orderRateText");
+
+    if (orderCountEl) {
+      orderCountEl.textContent = `先攻${first.length}回 / 後攻${second.length}回`;
+    }
+    if (orderRateEl) {
+      const fDisp = fRate.toFixed(1);
+      const sDisp = sRate.toFixed(1);
+      orderRateEl.textContent = `先攻${fDisp}% / 後攻${sDisp}%`;
+    }
   }
 
   // 直近10戦サマリー
