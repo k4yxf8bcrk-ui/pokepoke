@@ -428,6 +428,12 @@
         <div class="stat-main" id="secondRateText">0.0%</div>
         <div class="stat-sub" id="secondDetailText">0勝 0敗</div>
       </div>
+      <!-- ★ 追加：先攻 / 後攻 回数・比率 -->
+      <div class="stat-box">
+        <div class="stat-title">先攻 / 後攻 回数・比率</div>
+        <div class="stat-main" id="orderCountMain">先攻0回 / 後攻0回</div>
+        <div class="stat-sub" id="orderCountSub">先攻0% / 後攻0%</div>
+      </div>
     </div>
   </section>
 
@@ -1341,6 +1347,30 @@
 
     setRateColor("firstRateText", fRate, fTotal>0);
     setRateColor("secondRateText", sRate, sTotal>0);
+
+    // ★ 追加：先攻 / 後攻 回数 と 比率
+    const firstAllCount = first.length;   // 引き分け含む先攻の回数
+    const secondAllCount = second.length; // 引き分け含む後攻の回数
+    const orderTotalAll = firstAllCount + secondAllCount;
+
+    const orderMainEl = document.getElementById("orderCountMain");
+    const orderSubEl = document.getElementById("orderCountSub");
+
+    if (orderMainEl) {
+      orderMainEl.textContent = `先攻${firstAllCount}回 / 後攻${secondAllCount}回`;
+    }
+    if (orderSubEl) {
+      if (orderTotalAll === 0) {
+        orderSubEl.textContent = "先攻0% / 後攻0%";
+        orderSubEl.style.color = "#6b7280";
+      } else {
+        const firstRatio = firstAllCount / orderTotalAll * 100;
+        const secondRatio = 100 - firstRatio;
+        orderSubEl.textContent =
+          `先攻${firstRatio.toFixed(1)}% / 後攻${secondRatio.toFixed(1)}%`;
+        orderSubEl.style.color = "#374151";
+      }
+    }
   }
 
   // 直近10戦サマリー
