@@ -634,78 +634,84 @@
     el.appendChild(wrap);
   }
 
-  let slumpChart = null;
+  // ★ここから差し替え★
+let slumpChart = null; // グローバルに1個
 
-  function renderSlumpChart() {
-    const ctx = document.getElementById("slump-chart");
-    if (!ctx) return;
+function renderSlumpChart() {
+  const ctx = document.getElementById("slump-chart");
+  if (!ctx) return;
 
-    // 並び替え（古い順）
-    const sorted = [...matches].sort((a, b) => (a.id || 0) - (b.id || 0));
+  // 古い順に並べ替え
+  const sorted = [...matches].sort((a, b) => (a.id || 0) - (b.id || 0));
 
-    const labels = [];
-    const data = [];
-    let current = 0;
-    sorted.forEach((m, idx) => {
-      if (m.result === "win") current += 1;
-      else if (m.result === "lose") current -= 1;
-      // drawは0
+  // ---- ここがポイント ----
+  // グラフに出すのは「直近 MAX_POINTS 戦」だけ
+  const MAX_POINTS = 120; // ここを100とか50にしてもOK
+  const startIndex = Math.max(0, sorted.length - MAX_POINTS);
 
-      labels.push(`#${idx + 1}`);
-      data.push(current);
-    });
+  const labels = [];
+  const data = [];
+  let current = 0;
 
-    if (slumpChart) {
-      slumpChart.destroy();
-      slumpChart = null;
+  sorted.forEach((m, i) => {
+    // 累計スランプは全試合を通して計算
+    if (m.result === "win") current += 1;
+    else if (m.result === "lose") current -= 1;
+    // draw は 0
+
+    // 直近 MAX_POINTS 分だけ、グラフに乗せる
+    if (i >= startIndex) {
+      labels.push(`#${i + 1}`);  // 何戦目か
+      data.push(current);        // その時点の累計
     }
+  });
 
-    if (!sorted.length) {
-      // データなしなら空グラフで終了
-      slumpChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: [],
-          datasets: [{
-            label: "スランプ",
-            data: [],
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } }
-        }
-      });
-      return;
-    }
+  // すでにグラフがあれば破棄（これをしないと挙動が変になることがあります）
+  if (slumpChart) {
+    slumpChart.destroy();
+    slumpChart = null;
+  }
 
+  // データがないときは空グラフ
+  if (!labels.length) {
     slumpChart = new Chart(ctx, {
       type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "スランプ",
-          data,
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 0,
-        }]
+      data: { labels: [], datasets: [{ data: [] }] },
+      options: { plugins: { legend: { display: false } } }
+    });
+    return;
+  }
+
+  slumpChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "スランプ",
+        data,
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,   // ← 高さが伸び続けないようにする
+      plugins: {
+        legend: { display: false }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: {
-            ticks: {
-              maxTicksLimit: 8
-            }
+      scales: {
+        x: {
+          ticks: {
+            maxTicksLimit: 10       // 目盛りが増えすぎないように
           }
         }
       }
-    });
-  }
+    }
+  });
+}
+// ★ここまで差し替え★
+
 
   // ====== 統計（CSSバー） ======
 
