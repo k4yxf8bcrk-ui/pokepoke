@@ -522,10 +522,7 @@
 </main>
 
 <script>
-  // ====== データ保存まわり ======
   const STORAGE_KEY = "pokepoke_matches_v1";
-
-  /** @type {Array} */
   let matches = [];
 
   function loadMatches() {
@@ -535,11 +532,7 @@
         matches = [];
       } else {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          matches = parsed;
-        } else {
-          matches = [];
-        }
+        matches = Array.isArray(parsed) ? parsed : [];
       }
     } catch (e) {
       console.error("load error", e);
@@ -554,8 +547,6 @@
       console.error("save error", e);
     }
   }
-
-  // ====== 共通ユーティリティ ======
 
   function formatTimeFromId(id) {
     if (!id) return "";
@@ -572,7 +563,20 @@
     return (win / total) * 100;
   }
 
-  // ====== UI描画 ======
+  function calcOrderStats(matches) {
+    const res = {
+      first: { label: "先行", win: 0, lose: 0, draw: 0 },
+      second: { label: "後攻", win: 0, lose: 0, draw: 0 }
+    };
+    matches.forEach(m => {
+      const o = m.order;
+      if (!o || !res[o]) return;
+      if (m.result === "win") res[o].win++;
+      else if (m.result === "lose") res[o].lose++;
+      else res[o].draw++;
+    });
+    return res;
+  }
 
   function renderOverallSummary() {
     const el = document.getElementById("overall-summary");
@@ -588,7 +592,6 @@
 
     const wlTotal = win + lose;
     const winRate = wlTotal ? (win / wlTotal) * 100 : 0;
-
     const orderStats = calcOrderStats(matches);
 
     el.innerHTML = "";
@@ -640,7 +643,6 @@
     const ctx = document.getElementById("slump-chart");
     if (!ctx) return;
 
-    // 並び替え（古い順）
     const sorted = [...matches].sort((a, b) => (a.id || 0) - (b.id || 0));
 
     const labels = [];
@@ -649,8 +651,6 @@
     sorted.forEach((m, idx) => {
       if (m.result === "win") current += 1;
       else if (m.result === "lose") current -= 1;
-      // drawは0
-
       labels.push(`#${idx + 1}`);
       data.push(current);
     });
@@ -661,19 +661,10 @@
     }
 
     if (!sorted.length) {
-      // データなしなら空グラフで終了
       slumpChart = new Chart(ctx, {
         type: "line",
-        data: {
-          labels: [],
-          datasets: [{
-            label: "スランプ",
-            data: [],
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } }
-        }
+        data: { labels: [], datasets: [{ label: "スランプ", data: [] }] },
+        options: { plugins: { legend: { display: false } } }
       });
       return;
     }
@@ -687,27 +678,19 @@
           data,
           tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
+          pointRadius: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
+        plugins: { legend: { display: false } },
         scales: {
-          x: {
-            ticks: {
-              maxTicksLimit: 8
-            }
-          }
+          x: { ticks: { maxTicksLimit: 8 } }
         }
       }
     });
   }
-
-  // ====== 統計（CSSバー） ======
 
   function groupByDate(matches) {
     const map = new Map();
@@ -732,7 +715,6 @@
       const d = new Date(m.id);
       if (isNaN(d.getTime())) return;
       const hour = d.getHours();
-
       if (!map.has(hour)) {
         map.set(hour, { hour, win: 0, lose: 0, draw: 0 });
       }
@@ -742,21 +724,6 @@
       else row.draw++;
     });
     return Array.from(map.values()).sort((a, b) => a.hour - b.hour);
-  }
-
-  function calcOrderStats(matches) {
-    const res = {
-      first: { label: "先行", win: 0, lose: 0, draw: 0 },
-      second: { label: "後攻", win: 0, lose: 0, draw: 0 }
-    };
-    matches.forEach(m => {
-      const o = m.order;
-      if (!o || !res[o]) return;
-      if (m.result === "win") res[o].win++;
-      else if (m.result === "lose") res[o].lose++;
-      else res[o].draw++;
-    });
-    return res;
   }
 
   function createStatsRow(labelText, summaryText, winRate) {
@@ -865,14 +832,11 @@
     });
   }
 
-  // ====== 対戦一覧 ======
-
   function renderMatchList() {
     const tbody = document.getElementById("match-list-body");
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    // 新しい順に
     const sorted = [...matches].sort((a, b) => (b.id || 0) - (a.id || 0));
 
     sorted.forEach((m, index) => {
@@ -950,8 +914,6 @@
     });
   }
 
-  // ====== バックアップ ======
-
   function updateBackupTextarea() {
     const textarea = document.getElementById("backup-textarea");
     if (!textarea) return;
@@ -965,8 +927,6 @@
     el.style.color = isError ? "#b91c1c" : "#4b5563";
   }
 
-  // ====== メイン描画 ======
-
   function renderAll() {
     renderOverallSummary();
     renderSlumpChart();
@@ -977,10 +937,7 @@
     updateBackupTextarea();
   }
 
-  // ====== 初期化 ======
-
   document.addEventListener("DOMContentLoaded", () => {
-    // 日付初期値：今日
     const dateInput = document.getElementById("date-input");
     const todayStr = new Date().toISOString().slice(0, 10);
     if (dateInput) {
@@ -1027,7 +984,6 @@
       saveMatches();
       renderAll();
 
-      // フォーム軽くリセット（デッキ名はそのまま残してもOKなら残してもよい）
       memoInput.value = "";
     });
 
