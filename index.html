@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <title>ポケポケ 勝敗記録</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Chart.js（スランプグラフ用） -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="apple-touch-icon" href="icons/app-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
     body {
@@ -14,1021 +13,1682 @@
       margin: 0;
       padding: 0;
       background: #f4f6fb;
-      color: #111827;
     }
-
     header {
       background: #2563eb;
       color: white;
       padding: 12px 16px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
-
-    header .subtitle {
-      font-size: 12px;
-      font-weight: 400;
-      opacity: 0.9;
-    }
-
     main {
       padding: 12px 16px 40px;
-      max-width: 1000px;
+      max-width: 900px;
       margin: 0 auto;
     }
-
-    .grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 12px;
-    }
-
-    @media (max-width: 800px) {
-      .grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
     .card {
       background: white;
       border-radius: 12px;
       padding: 12px 14px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-      box-sizing: border-box;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-
     .card h2 {
-      font-size: 16px;
       margin: 0 0 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      font-size: 16px;
     }
-
-    .card h2 span.badge {
-      font-size: 11px;
-      background: #e5edff;
-      color: #1d4ed8;
-      padding: 2px 6px;
-      border-radius: 999px;
-    }
-
-    .card p.desc {
-      margin: 0 0 8px;
-      font-size: 11px;
+    .card small {
       color: #6b7280;
     }
-
-    .form-row {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 8px;
+    label {
       font-size: 13px;
+      display: block;
+      margin: 6px 0 2px;
     }
-
-    .form-row label {
-      margin-bottom: 2px;
-      font-weight: 500;
-    }
-
-    .form-row input,
-    .form-row select,
-    .form-row textarea {
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
       border-radius: 8px;
       border: 1px solid #d1d5db;
-      padding: 6px 8px;
       font-size: 13px;
-      font-family: inherit;
-      box-sizing: border-box;
+      background: #ffffff;
     }
-
-    .form-row textarea {
+    textarea {
       min-height: 50px;
-      resize: vertical;
     }
-
-    .inline-options {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .inline-option {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 13px;
-    }
-
     button {
-      border-radius: 999px;
       border: none;
+      border-radius: 999px;
       padding: 8px 14px;
       font-size: 13px;
-      font-weight: 600;
       cursor: pointer;
+    }
+    .btn-main {
       background: #2563eb;
       color: white;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
     }
-
-    button.secondary {
+    .btn-sub {
       background: #e5e7eb;
-      color: #111827;
+      color: #374151;
     }
-
-    button.danger {
-      background: #ef4444;
-      color: white;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    .summary-row {
+    .row {
       display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .summary-label {
-      color: #4b5563;
-    }
-
-    .summary-value {
-      font-weight: 600;
-    }
-
-    .summary-highlight {
-      font-size: 20px;
-      font-weight: 700;
-    }
-
-    .summary-sub {
-      font-size: 11px;
-      color: #6b7280;
-    }
-
-    .summary-wrap {
-      display: flex;
-      flex-wrap: wrap;
       gap: 8px;
-      margin-top: 8px;
     }
-
-    .summary-pill {
-      background: #f3f4f6;
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+    .row > div {
+      flex: 1;
     }
-
-    .summary-pill span.key {
-      color: #4b5563;
-    }
-
-    .summary-pill span.val {
-      font-weight: 600;
-    }
-
-    .table-wrapper {
-      margin-top: 6px;
-      max-height: 360px;
-      overflow: auto;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-    }
-
     table {
-      border-collapse: collapse;
       width: 100%;
+      border-collapse: collapse;
       font-size: 12px;
-      min-width: 600px;
     }
-
-    thead {
-      position: sticky;
-      top: 0;
-      background: #f9fafb;
-      z-index: 1;
-    }
-
     th, td {
-      padding: 6px 8px;
       border-bottom: 1px solid #e5e7eb;
+      padding: 4px 6px;
       text-align: left;
-      white-space: nowrap;
+      vertical-align: middle;
     }
-
     th {
-      font-weight: 600;
-      color: #4b5563;
-      font-size: 11px;
+      background: #f3f4f6;
     }
 
-    tr:nth-child(even) td {
-      background: #f9fafb;
+    /* 結果列（勝ち／先攻）の中央揃え */
+    #recordsTable th:nth-child(4),
+    #recordsTable td:nth-child(4) {
+      text-align: center;
     }
 
     .tag-win {
-      color: #16a34a;
-      font-weight: 700;
+      color: #1d4ed8;
+      font-weight: bold;
     }
-
     .tag-lose {
-      color: #ef4444;
-      font-weight: 700;
+      color: #b91c1c;
+      font-weight: bold;
     }
-
     .tag-draw {
       color: #6b7280;
-      font-weight: 700;
+      font-weight: bold;
     }
-
     .tag-order {
+      display: inline-block;
       font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #eef2ff;
-      color: #3730a3;
-    }
-
-    .tag-type {
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .delete-btn {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: none;
-      background: #fee2e2;
-      color: #991b1b;
-      cursor: pointer;
-    }
-
-    /* 統計用の棒グラフ風（CSS） */
-
-    .stats-row {
-      margin-bottom: 8px;
-    }
-
-    .stats-row-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      margin-bottom: 2px;
-    }
-
-    .stats-label {
-      font-weight: 500;
-    }
-
-    .stats-summary {
-      color: #4b5563;
-    }
-
-    .stats-bar-wrapper {
-      position: relative;
-      height: 10px;
+      padding: 1px 6px;
       border-radius: 999px;
       background: #e5e7eb;
-      overflow: hidden;
-    }
-
-    .stats-bar-fill {
-      height: 100%;
-      background: #3b82f6;
-      border-radius: 999px;
-    }
-
-    .stats-bar-percent {
       margin-top: 2px;
-      font-size: 10px;
-      color: #374151;
-      text-align: right;
     }
-
-    /* backup area */
-    .backup-textarea {
-      width: 100%;
-      min-height: 90px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      padding: 6px 8px;
-      font-size: 11px;
-      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      box-sizing: border-box;
-    }
-
-    .backup-actions {
-      display: flex;
-      flex-wrap: wrap;
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 8px;
-      margin-top: 6px;
+      font-size: 13px;
+    }
+    .stat-box {
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #eff6ff;
+    }
+    .stat-title {
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .stat-main {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .stat-sub {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 12px;
+    }
+    .type-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    /* ★ デッキ名＋属性を「カード風」にする */
+    .deck-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      max-width: 180px;
+      box-sizing: border-box;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-card span {
+      font-size: 12px;
+    }
+
+    .type-preview {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      min-height: 22px;
+      cursor: pointer;
+    }
+    .type-preview span {
+      margin-left: 4px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .type-picker {
+      position: relative;
+      margin-top: 2px;
+    }
+    .type-panel {
+      position: relative;
+      margin-top: 4px;
+      padding: 6px;
+      border-radius: 10px;
+      background: #f3f4ff;
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .type-panel.open {
+      display: flex;
+    }
+    .type-btn {
+      border-radius: 999px;
+      padding: 4px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+    .type-btn img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    canvas {
+      width: 100%;
+      height: 200px;
+      display: block;
+    }
+    /* スランプ値の色 */
+    .slump-plus {
+      color: #2563eb;
+      font-weight: bold;
+    }
+    .slump-minus {
+      color: #dc2626;
+      font-weight: bold;
+    }
+    .slump-zero {
+      color: #6b7280;
+    }
+    /* 属性マトリクス用 */
+    #typeMatrixTable th,
+    #typeMatrixTable td {
+      text-align: center;
+      font-size: 11px;
+      padding: 4px;
+    }
+    #deckStatsTable th,
+    #deckStatsTable td {
+      font-size: 12px;
     }
   </style>
 </head>
 <body>
 <header>
-  <div>
-    ポケポケ 勝敗記録
-    <div class="subtitle">勝率・スランプ・先行/後攻・時間帯までまとめて見える化</div>
-  </div>
-  <div style="font-size: 11px;">ver. 日付＆時間統計入り</div>
+  ポケポケ 勝敗記録（Web版）
 </header>
 
 <main>
-  <div class="grid">
-    <!-- 左側：入力＆サマリー -->
-    <section class="card">
-      <h2>対戦を記録する <span class="badge">NEW</span></h2>
-      <p class="desc">対戦が終わったらサクッと入力。時間は「登録した瞬間」が自動で記録されます。</p>
-
-      <div class="form-row">
-        <label for="date-input">日付</label>
-        <input id="date-input" type="date">
+  <!-- 入力フォーム -->
+  <section class="card">
+    <h2>対戦を記録</h2>
+    <div class="row">
+      <div>
+        <label>日付</label>
+        <input type="date" id="dateInput">
       </div>
-
-      <div class="form-row">
-        <label for="mydeck-input">自分のデッキ名</label>
-        <input id="mydeck-input" type="text" placeholder="例: メガバシャーモex">
+      <div>
+        <label>自分のデッキ</label>
+        <select id="myDeckPreset" onchange="applyDeckPreset('my')">
+          <option value="">▼ 履歴から選択（任意）</option>
+        </select>
+        <input type="text" id="myDeckInput" placeholder="例）エビワラー" />
       </div>
+    </div>
 
-      <div class="form-row">
-        <label for="opponentdeck-input">相手のデッキ名</label>
-        <input id="opponentdeck-input" type="text" placeholder="例: スイクンex">
-      </div>
+    <label>相手のデッキ</label>
+    <select id="opponentDeckPreset" onchange="applyDeckPreset('opp')">
+      <option value="">▼ 履歴から選択（任意）</option>
+    </select>
+    <input type="text" id="opponentDeckInput" placeholder="例）水デッキ" />
 
-      <div class="form-row">
-        <label>タイプ</label>
-        <div class="inline-options">
-          <div class="inline-option">
-            <select id="type-input">
-              <option value="">自分</option>
-              <option value="fire">炎</option>
-              <option value="water">水</option>
-              <option value="grass">草</option>
-              <option value="lightning">雷</option>
-              <option value="psychic">超</option>
-              <option value="dark">悪</option>
-              <option value="dragon">ドラゴン</option>
-              <option value="colorless">無色</option>
-            </select>
+    <div class="row">
+      <div>
+        <label>自分の属性</label>
+        <input type="hidden" id="typeInput">
+        <div class="type-picker">
+          <div id="selfTypePreview" class="type-preview" onclick="toggleTypePanel('self')">
+            <span>タップして属性を選択</span>
           </div>
-          <div class="inline-option">
-            <select id="opponenttype-input">
-              <option value="">相手</option>
-              <option value="fire">炎</option>
-              <option value="water">水</option>
-              <option value="grass">草</option>
-              <option value="lightning">雷</option>
-              <option value="psychic">超</option>
-              <option value="dark">悪</option>
-              <option value="dragon">ドラゴン</option>
-              <option value="colorless">無色</option>
-            </select>
+          <div id="selfTypePanel" class="type-panel">
+            <button type="button" class="type-btn" onclick="selectType('self','fire')">
+              <img src="icons/fire.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','water')">
+              <img src="icons/water.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','grass')">
+              <img src="icons/grass.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','lightning')">
+              <img src="icons/lightning.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','psychic')">
+              <img src="icons/psychic.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','darkness')">
+              <img src="icons/darkness.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','fighting')">
+              <img src="icons/fighting.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','metal')">
+              <img src="icons/metal.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('self','colorless')">
+              <img src="icons/colorless.png" alt="">
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="form-row">
+      <div>
+        <label>相手の属性</label>
+        <input type="hidden" id="opponentTypeInput">
+        <div class="type-picker">
+          <div id="oppTypePreview" class="type-preview" onclick="toggleTypePanel('opp')">
+            <span>タップして属性を選択</span>
+          </div>
+          <div id="oppTypePanel" class="type-panel">
+            <button type="button" class="type-btn" onclick="selectType('opp','fire')">
+              <img src="icons/fire.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','water')">
+              <img src="icons/water.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','grass')">
+              <img src="icons/grass.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','lightning')">
+              <img src="icons/lightning.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','psychic')">
+              <img src="icons/psychic.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','darkness')">
+              <img src="icons/darkness.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','fighting')">
+              <img src="icons/fighting.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','metal')">
+              <img src="icons/metal.png" alt="">
+            </button>
+            <button type="button" class="type-btn" onclick="selectType('opp','colorless')">
+              <img src="icons/colorless.png" alt="">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
         <label>結果</label>
-        <div class="inline-options">
-          <label class="inline-option">
-            <input type="radio" name="result" value="win" checked> 勝ち
-          </label>
-          <label class="inline-option">
-            <input type="radio" name="result" value="lose"> 負け
-          </label>
-          <label class="inline-option">
-            <input type="radio" name="result" value="draw"> 引き分け
-          </label>
-        </div>
+        <select id="resultInput" onchange="updateResultColor()">
+          <option value="win">勝ち</option>
+          <option value="lose">負け</option>
+          <option value="draw">引き分け</option>
+        </select>
       </div>
-
-      <div class="form-row">
-        <label>先行 / 後攻</label>
-        <div class="inline-options">
-          <label class="inline-option">
-            <input type="radio" name="order" value="first" checked> 先行
-          </label>
-          <label class="inline-option">
-            <input type="radio" name="order" value="second"> 後攻
-          </label>
-        </div>
+      <div>
+        <label>先攻 / 後攻</label>
+        <select id="orderInput">
+          <option value="first">先攻</option>
+          <option value="second">後攻</option>
+        </select>
       </div>
+    </div>
 
-      <div class="form-row">
-        <label for="memo-input">メモ（任意）</label>
-        <textarea id="memo-input" placeholder="例: 事故・相手の事故・感想など"></textarea>
-      </div>
+    <label>メモ</label>
+    <textarea id="memoInput" placeholder="例）サイド差2枚で押し切り、事故、じゃんけん負けなど"></textarea>
 
-      <div class="form-row">
-        <button id="add-match-button">この対戦を保存</button>
-      </div>
-
-      <hr style="margin: 10px 0; border: none; border-top: 1px dashed #e5e7eb;">
-
-      <h2>全体サマリー</h2>
-      <div id="overall-summary">
-        <!-- JSで埋める -->
-      </div>
-    </section>
-
-    <!-- 右側：スランプ & バックアップ -->
-    <section class="card">
-      <h2>スランプグラフ</h2>
-      <p class="desc">勝ちで +1、負けで -1、引き分け 0 とした「累積」のグラフです。</p>
-      <canvas id="slump-chart" height="180"></canvas>
-
-      <hr style="margin: 10px 0; border: none; border-top: 1px dashed #e5e7eb;">
-
-      <h2>バックアップ / 復元</h2>
-      <p class="desc">
-        「コピー」してメモ帳などに保存しておけば、いつでも復元できます。<br>
-        JSON を貼り付けて「復元する」を押すと、現在のデータは上書きされます。
-      </p>
-      <textarea id="backup-textarea" class="backup-textarea" placeholder="ここにJSONを貼り付け / ここからコピー"></textarea>
-      <div class="backup-actions">
-        <button id="backup-copy-button" class="secondary">今のデータをコピー</button>
-        <button id="backup-restore-button" class="danger">貼り付けたJSONで復元する</button>
-        <button id="backup-clear-button" class="secondary">全データを削除</button>
-      </div>
-      <div id="backup-message" style="margin-top: 4px; font-size: 11px; color: #6b7280;"></div>
-    </section>
-  </div>
-
-  <!-- 2段目：統計 -->
-  <section class="card" style="margin-top: 12px;">
-    <h2>日付ごとの勝率</h2>
-    <p class="desc">1日ごとの勝率（勝ち/負けのみで計算。引き分けは除外）</p>
-    <div id="daily-winrate-container"></div>
+    <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn-sub" type="button" onclick="clearForm()">リセット</button>
+      <button id="submitButton" class="btn-main" type="button" onclick="addRecord()">記録を追加</button>
+    </div>
+    <p class="muted">※ ブラウザの中に自動保存されます（localStorage使用）。</p>
   </section>
 
-  <section class="card" style="margin-top: 12px;">
-    <h2>時間帯ごとの勝率</h2>
-    <p class="desc">0〜23時ごとの勝率（保存した時間を元に集計）</p>
-    <div id="hourly-winrate-container"></div>
+  <!-- AIデッキ予想 -->
+  <section class="card">
+    <h2>AI予想：次に勝てそうなデッキ</h2>
+    <p id="aiDeckMessage" class="muted" style="margin-bottom:4px;">
+      まだデータが少ないため予想できません。まずは対戦を記録しましょう。
+    </p>
+    <small class="muted">
+      ※ 自分のデッキごとの勝率と対戦数（5戦以上）からシンプルに計算しています。
+    </small>
   </section>
 
-  <section class="card" style="margin-top: 12px;">
-    <h2>先行 / 後攻 の試合数と勝率</h2>
-    <p class="desc">先行・後攻で何試合して、どれくらい勝っているかを表示します。</p>
-    <div id="order-summary-container"></div>
+  <!-- 成績サマリ -->
+  <section class="card">
+    <h2>成績サマリー</h2>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-title">トータル</div>
+        <div class="stat-main" id="totalText">0戦</div>
+        <div class="stat-sub" id="wlText">勝0 / 負0 / 分0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">総合勝率（引き分け除く）</div>
+        <div class="stat-main" id="winRateText">0.0%</div>
+        <div class="stat-sub">（勝 / （勝+負））</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">先攻 勝率</div>
+        <div class="stat-main" id="firstRateText">0.0%</div>
+        <div class="stat-sub" id="firstDetailText">0勝 0敗</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">後攻 勝率</div>
+        <div class="stat-main" id="secondRateText">0.0%</div>
+        <div class="stat-sub" id="secondDetailText">0勝 0敗</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 直近10戦サマリー -->
+  <section class="card">
+    <h2>直近10戦サマリー</h2>
+    <small>最新の10戦（足りない場合はある分だけ）を対象にした成績</small>
+    <div class="stats-grid" style="margin-top:6px;">
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 成績</div>
+        <div class="stat-main" id="recentTotalText">0戦</div>
+        <div class="stat-sub" id="recentWLText">勝0 / 負0 / 分0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 勝率</div>
+        <div class="stat-main" id="recentWinRateText">0.0%</div>
+        <div class="stat-sub">（勝 / （勝+負））</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">直近10戦 先攻 / 後攻</div>
+        <div class="stat-sub" id="recentFirstSecondText">
+          先攻: 0勝0敗 / 後攻: 0勝0敗
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 勝率グラフ -->
+  <section class="card">
+    <h2>勝率の推移</h2>
+    <small>勝ち / 負けのみで計算（引き分けは除外）｜下の数字は「何戦目」｜50％ライン濃い線：上＝青／下＝赤</small>
+    <canvas id="winrateCanvas"></canvas>
+  </section>
+
+  <!-- スランプグラフ -->
+  <section class="card">
+    <h2>スランプグラフ</h2>
+    <small>勝ち +1 / 負け −1 / 引き分け 0 の累計（古い対戦から順に）｜左に累計ポイント｜下の数字は「何戦目」</small>
+    <canvas id="slumpCanvas"></canvas>
+    <small id="slumpInfo" class="muted"></small><br>
+    <small class="muted">
+      最高連勝：<span id="maxWinText">0連勝</span>　｜　
+      最高連敗：<span id="maxLoseText">0連敗</span>
+    </small><br>
+    <small class="muted">
+      現在の連勝：<span id="curWinText">0連勝</span>　｜　
+      現在の連敗：<span id="curLoseText">0連敗</span>
+    </small>
+  </section>
+
+  <!-- 自分の属性 使用率 円グラフ -->
+  <section class="card">
+    <h2>自分のデッキ属性 使用率</h2>
+    <small>自分が使ったデッキの属性の割合（炎・水・草・雷・超・悪・闘・鋼・無色）</small>
+    <canvas id="myTypePie"></canvas>
+    <div id="myTypeLegend" style="margin-top:8px; font-size:12px;"></div>
+  </section>
+
+  <!-- デッキ別戦績 -->
+  <section class="card">
+    <h2>デッキ別戦績（自分のデッキ）</h2>
+    <div style="overflow-x:auto;">
+      <table id="deckStatsTable">
+        <thead>
+          <tr>
+            <th>デッキ名</th>
+            <th>対戦数</th>
+            <th>勝</th>
+            <th>負</th>
+            <th>分</th>
+            <th>勝率</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 属性×属性 勝率 -->
+  <section class="card">
+    <h2>属性 × 属性 勝率</h2>
+    <small>行：自分の属性 ／ 列：相手の属性</small>
+    <div style="overflow-x:auto;">
+      <table id="typeMatrixTable"></table>
+    </div>
   </section>
 
   <!-- 対戦一覧 -->
-  <section class="card" style="margin-top: 12px;">
+  <section class="card">
     <h2>対戦履歴</h2>
-    <p class="desc">最新の対戦が上に表示されます。時間は自動記録されたものです。</p>
-    <div class="table-wrapper">
-      <table>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <small id="countText">0件</small>
+      <div style="display:flex; gap:4px;">
+        <button class="btn-sub" type="button" onclick="backupData()" style="font-size:11px;">バックアップ</button>
+        <button class="btn-sub" type="button" onclick="restoreData()" style="font-size:11px;">復元</button>
+        <button class="btn-sub" type="button" onclick="clearAll()" style="font-size:11px;">全消去</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="recordsTable">
         <thead>
           <tr>
-            <th>#</th>
             <th>日付</th>
-            <th>時間</th>
+            <th>自分のデッキ</th>
+            <th>相手のデッキ</th>
             <th>結果</th>
-            <th>先行/後攻</th>
-            <th>自分デッキ</th>
-            <th>相手デッキ</th>
-            <th>タイプ</th>
+            <th>スランプ</th>
             <th>メモ</th>
-            <th>削除</th>
+            <th></th>
           </tr>
         </thead>
-        <tbody id="match-list-body">
-          <!-- JSで埋める -->
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
   </section>
 </main>
 
 <script>
-  const STORAGE_KEY = "pokepoke_matches_v1";
-  let matches = [];
+  const TYPE_KEYS = ["fire","water","grass","lightning","psychic","darkness","fighting","metal","colorless"];
+  const TYPE_LABEL = {
+    fire: "炎", water: "水", grass: "草",
+    lightning: "雷", psychic: "超", darkness: "悪",
+    fighting: "闘", metal: "鋼", colorless: "無"
+  };
 
-  function loadMatches() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        matches = [];
-      } else {
-        const parsed = JSON.parse(raw);
-        matches = Array.isArray(parsed) ? parsed : [];
-      }
-    } catch (e) {
-      console.error("load error", e);
-      matches = [];
-    }
-  }
-
-  function saveMatches() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
-    } catch (e) {
-      console.error("save error", e);
-    }
-  }
-
-  function formatTimeFromId(id) {
-    if (!id) return "";
-    const d = new Date(id);
-    if (isNaN(d.getTime())) return "";
-    const h = d.getHours().toString().padStart(2, "0");
-    const m = d.getMinutes().toString().padStart(2, "0");
-    return `${h}:${m}`;
-  }
-
-  function calcWinRate(win, lose) {
-    const total = win + lose;
-    if (!total) return 0;
-    return (win / total) * 100;
-  }
-
-  function calcOrderStats(matches) {
-    const res = {
-      first: { label: "先行", win: 0, lose: 0, draw: 0 },
-      second: { label: "後攻", win: 0, lose: 0, draw: 0 }
-    };
-    matches.forEach(m => {
-      const o = m.order;
-      if (!o || !res[o]) return;
-      if (m.result === "win") res[o].win++;
-      else if (m.result === "lose") res[o].lose++;
-      else res[o].draw++;
-    });
-    return res;
-  }
-
-  function renderOverallSummary() {
-    const el = document.getElementById("overall-summary");
-    if (!el) return;
-
-    const total = matches.length;
-    let win = 0, lose = 0, draw = 0;
-    matches.forEach(m => {
-      if (m.result === "win") win++;
-      else if (m.result === "lose") lose++;
-      else draw++;
-    });
-
-    const wlTotal = win + lose;
-    const winRate = wlTotal ? (win / wlTotal) * 100 : 0;
-    const orderStats = calcOrderStats(matches);
-
-    el.innerHTML = "";
-
-    const big = document.createElement("div");
-    big.className = "summary-highlight";
-    big.textContent = `${winRate.toFixed(1)}%`;
-    el.appendChild(big);
-
-    const sub = document.createElement("div");
-    sub.className = "summary-sub";
-    sub.textContent = `勝率（勝ち/負けのみ）`;
-    el.appendChild(sub);
-
-    const row1 = document.createElement("div");
-    row1.className = "summary-row";
-    row1.innerHTML =
-      `<div class="summary-label">総試合数</div><div class="summary-value">${total}戦</div>`;
-    el.appendChild(row1);
-
-    const row2 = document.createElement("div");
-    row2.className = "summary-row";
-    row2.innerHTML =
-      `<div class="summary-label">内訳</div><div class="summary-value">勝 ${win} / 負 ${lose} / 分 ${draw}</div>`;
-    el.appendChild(row2);
+  // デッキ名 + 属性アイコンを1つの「カード風」セルに表示
+  function createDeckCell(deckName, typeKey) {
+    const td = document.createElement("td");
 
     const wrap = document.createElement("div");
-    wrap.className = "summary-wrap";
+    wrap.className = "deck-card";   // ★ ここでカード風スタイルを適用
 
-    ["first", "second"].forEach(key => {
-      const st = orderStats[key];
-      const totalOrder = st.win + st.lose + st.draw;
-      const rate = calcWinRate(st.win, st.lose);
-
-      const pill = document.createElement("div");
-      pill.className = "summary-pill";
-      pill.innerHTML =
-        `<span class="key">${st.label}</span>` +
-        `<span class="val">${totalOrder}戦 / 勝率 ${rate.toFixed(1)}%</span>`;
-      wrap.appendChild(pill);
-    });
-
-    el.appendChild(wrap);
-  }
-
-  let slumpChart = null;
-
-  function renderSlumpChart() {
-    const ctx = document.getElementById("slump-chart");
-    if (!ctx) return;
-
-    const sorted = [...matches].sort((a, b) => (a.id || 0) - (b.id || 0));
-
-    const labels = [];
-    const data = [];
-    let current = 0;
-    sorted.forEach((m, idx) => {
-      if (m.result === "win") current += 1;
-      else if (m.result === "lose") current -= 1;
-      labels.push(`#${idx + 1}`);
-      data.push(current);
-    });
-
-    if (slumpChart) {
-      slumpChart.destroy();
-      slumpChart = null;
+    const src = typeIconSrc(typeKey);
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.className = "type-icon";
+      wrap.appendChild(img);
     }
 
-    if (!sorted.length) {
-      slumpChart = new Chart(ctx, {
-        type: "line",
-        data: { labels: [], datasets: [{ label: "スランプ", data: [] }] },
-        options: { plugins: { legend: { display: false } } }
+    const span = document.createElement("span");
+    span.textContent = deckName || "";
+    wrap.appendChild(span);
+
+    td.appendChild(wrap);
+    return td;
+  }
+
+  let records = [];
+  let editingId = null;
+
+  function loadData() {
+    const raw = localStorage.getItem("pokepokeRecords");
+    if (raw) {
+      try { records = JSON.parse(raw); } catch(e) { records = []; }
+    }
+  }
+  function saveData() {
+    localStorage.setItem("pokepokeRecords", JSON.stringify(records));
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const y = d.getFullYear();
+    const m = ("0"+(d.getMonth()+1)).slice(-2);
+    const day = ("0"+d.getDate()).slice(-2);
+    return `${y}/${m}/${day}`;
+  }
+  function resultLabel(r) {
+    if (r === "win") return "勝ち";
+    if (r === "lose") return "負け";
+    if (r === "draw") return "引き分け";
+    return "";
+  }
+  function orderLabel(o) {
+    if (o === "first") return "先攻";
+    if (o === "second") return "後攻";
+    return "";
+  }
+  function resultClass(r) {
+    if (r === "win") return "tag-win";
+    if (r === "lose") return "tag-lose";
+    return "tag-draw";
+  }
+  function typeIconSrc(t) {
+    if (!t) return null;
+    return "icons/" + t + ".png";
+  }
+
+  function applyDeckPreset(which) {
+    if (which === "my") {
+      const val = document.getElementById("myDeckPreset").value;
+      if (val) document.getElementById("myDeckInput").value = val;
+    } else {
+      const val = document.getElementById("opponentDeckPreset").value;
+      if (val) document.getElementById("opponentDeckInput").value = val;
+    }
+  }
+
+  function renderDeckPresets() {
+    const mySel = document.getElementById("myDeckPreset");
+    const oppSel = document.getElementById("opponentDeckPreset");
+    if (!mySel || !oppSel) return;
+
+    const mySet = new Set();
+    const oppSet = new Set();
+    records.forEach(r => {
+      if (r.myDeck && r.myDeck.trim()) mySet.add(r.myDeck.trim());
+      if (r.opponentDeck && r.opponentDeck.trim()) oppSet.add(r.opponentDeck.trim());
+    });
+
+    function fillSelect(sel, set, ph) {
+      sel.innerHTML = "";
+      const o0 = document.createElement("option");
+      o0.value = "";
+      o0.textContent = ph;
+      sel.appendChild(o0);
+      Array.from(set).sort().forEach(name => {
+        const o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        sel.appendChild(o);
       });
+    }
+    fillSelect(mySel, mySet, "▼ 履歴から選択（任意）");
+    fillSelect(oppSel, oppSet, "▼ 履歴から選択（任意）");
+  }
+
+  function toggleTypePanel(who) {
+    const selfPanel = document.getElementById("selfTypePanel");
+    const oppPanel = document.getElementById("oppTypePanel");
+    if (who === "self") {
+      const open = !selfPanel.classList.contains("open");
+      selfPanel.classList.toggle("open", open);
+      oppPanel.classList.remove("open");
+    } else {
+      const open = !oppPanel.classList.contains("open");
+      oppPanel.classList.toggle("open", open);
+      selfPanel.classList.remove("open");
+    }
+  }
+
+  function selectType(who, type) {
+    if (who === "self") {
+      document.getElementById("typeInput").value = type;
+      updateSelfPreview();
+      document.getElementById("selfTypePanel").classList.remove("open");
+    } else {
+      document.getElementById("opponentTypeInput").value = type;
+      updateOpponentPreview();
+      document.getElementById("oppTypePanel").classList.remove("open");
+    }
+  }
+
+  function updateSelfPreview() {
+    const t = document.getElementById("typeInput").value;
+    const c = document.getElementById("selfTypePreview");
+    c.innerHTML = "";
+    if (!t) {
+      const span = document.createElement("span");
+      span.textContent = "タップして属性を選択";
+      c.appendChild(span);
+      return;
+    }
+    const src = typeIconSrc(t);
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.className = "type-icon";
+      c.appendChild(img);
+    }
+  }
+
+  function updateOpponentPreview() {
+    const t = document.getElementById("opponentTypeInput").value;
+    const c = document.getElementById("oppTypePreview");
+    c.innerHTML = "";
+    if (!t) {
+      const span = document.createElement("span");
+      span.textContent = "タップして属性を選択";
+      c.appendChild(span);
+      return;
+    }
+    const src = typeIconSrc(t);
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.className = "type-icon";
+      c.appendChild(img);
+    }
+  }
+
+  function sortedByDateAsc() {
+    return records.slice().sort((a,b)=>{
+      const ad = a.date || "";
+      const bd = b.date || "";
+      if (ad < bd) return -1;
+      if (ad > bd) return 1;
+      return (a.id||0)-(b.id||0);
+    });
+  }
+
+  // 直近N戦を取得
+  function getRecentRecords(n) {
+    const sorted = sortedByDateAsc();
+    if (sorted.length <= n) return sorted;
+    return sorted.slice(sorted.length - n);
+  }
+
+  function calcSlumpPoints() {
+    const sorted = sortedByDateAsc();
+    let value = 0;
+    const pts = [];
+    for (const r of sorted) {
+      if (r.result === "win") value += 1;
+      else if (r.result === "lose") value -= 1;
+      pts.push(value);
+    }
+    return pts;
+  }
+
+  function calcSlumpMap() {
+    const sorted = sortedByDateAsc();
+    let value = 0;
+    const map = {};
+    sorted.forEach((r,i)=>{
+      if (r.result === "win") value += 1;
+      else if (r.result === "lose") value -= 1;
+      map[r.id] = value;
+      r.battleNumber = i+1;
+    });
+    return map;
+  }
+
+  function calcStreaks() {
+    let maxWin=0,maxLose=0,curWin=0,curLose=0;
+    sortedByDateAsc().forEach(r=>{
+      if (r.result === "win") {
+        curWin++; curLose=0;
+        if (curWin>maxWin) maxWin=curWin;
+      } else if (r.result === "lose") {
+        curLose++; curWin=0;
+        if (curLose>maxLose) maxLose=curLose;
+      } else {
+        curWin=0; curLose=0;
+      }
+    });
+    return {maxWin,maxLose,curWin,curLose};
+  }
+
+  function calcWinRatePoints() {
+    const sorted = sortedByDateAsc();
+    let w=0,l=0;
+    const pts=[];
+    for (const r of sorted) {
+      if (r.result==="win") w++;
+      else if (r.result==="lose") l++;
+      const b = w+l;
+      const rate = b===0?0:(w/b*100);
+      pts.push(rate);
+    }
+    return pts;
+  }
+
+  function renderSlumpGraph() {
+    const canvas = document.getElementById("slumpCanvas");
+    const info = document.getElementById("slumpInfo");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0,0,width,height);
+
+    const points = calcSlumpPoints();
+    const {maxWin,maxLose,curWin,curLose} = calcStreaks();
+
+    const maxWinEl = document.getElementById("maxWinText");
+    const maxLoseEl = document.getElementById("maxLoseText");
+    const curWinEl = document.getElementById("curWinText");
+    const curLoseEl = document.getElementById("curLoseText");
+
+    if (maxWinEl) {
+      maxWinEl.textContent = `${maxWin}連勝`;
+      maxWinEl.style.color = maxWin>0 ? "#2563eb" : "#6b7280";
+    }
+    if (maxLoseEl) {
+      maxLoseEl.textContent = `${maxLose}連敗`;
+      maxLoseEl.style.color = maxLose>=2 ? "#dc2626" : "#6b7280";
+    }
+    if (curWinEl) {
+      curWinEl.textContent = `${curWin}連勝`;
+      curWinEl.style.color = curWin>0 ? "#2563eb" : "#6b7280";
+    }
+    if (curLoseEl) {
+      curLoseEl.textContent = `${curLose}連敗`;
+      curLoseEl.style.color = curLose>=2 ? "#dc2626" : "#6b7280";
+    }
+
+    if (!points.length) {
+      if (info) {
+        info.textContent = "まだデータがありません";
+        info.style.color = "#6b7280";
+      }
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("まだデータがありません", 10, height/2);
+      return;
+    } else {
+      const last = points[points.length-1];
+      const sign = last>0?"+":"";
+      if (info) {
+        info.textContent = `現在の累計：${sign}${last}`;
+        info.style.color = last>0 ? "#2563eb" : last<0 ? "#dc2626" : "#6b7280";
+      }
+    }
+
+    const maxVal = Math.max(...points,0);
+    const minVal = Math.min(...points,0);
+    const range = Math.max(maxVal-minVal,1);
+
+    const padding = 32;
+    const usableW = width - padding*2;
+    const usableH = height - padding*2;
+
+    ctx.fillStyle = "#f9fafb";
+    ctx.fillRect(padding, padding, usableW, usableH);
+
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    const gridCount = 4;
+    for (let i=0;i<=gridCount;i++){
+      const y = padding + usableH*i/gridCount;
+      ctx.beginPath();
+      ctx.moveTo(padding,y);
+      ctx.lineTo(width-padding,y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    const zeroY = padding + usableH*(maxVal/range);
+    ctx.strokeStyle = "#4b5563";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padding,zeroY);
+    ctx.lineTo(width-padding,zeroY);
+    ctx.stroke();
+
+    function pointToXY(idx,v){
+      const ratio = points.length===1?0.5:idx/(points.length-1);
+      const x = padding + usableW*ratio;
+      const y = padding + usableH*((maxVal-v)/range);
+      return {x,y};
+    }
+
+    ctx.lineWidth = 2;
+    for (let i=1;i<points.length;i++){
+      const v1 = points[i-1];
+      const v2 = points[i];
+      const {x:x1,y:y1} = pointToXY(i-1,v1);
+      const {x:x2,y:y2} = pointToXY(i,v2);
+      const avg = (v1+v2)/2;
+      ctx.strokeStyle = avg>=0 ? "#2563eb" : "#dc2626";
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
+    }
+
+    for (let i=0;i<points.length;i++){
+      const v = points[i];
+      const {x,y} = pointToXY(i,v);
+      ctx.fillStyle = v>=0 ? "#2563eb" : "#dc2626";
+      ctx.beginPath();
+      ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    for (let i=0;i<points.length;i++){
+      const {x} = pointToXY(i,points[i]);
+      ctx.fillText(String(i+1), x-3, height-5);
+    }
+
+    const minY = Math.floor(minVal);
+    const maxY2 = Math.ceil(maxVal);
+    for (let v=minY; v<=maxY2; v++){
+      const y = padding + usableH*((maxVal - v)/range);
+      ctx.fillText(String(v), 6, y+3);
+    }
+  }
+
+  function renderWinRateGraph() {
+    const canvas = document.getElementById("winrateCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0,0,width,height);
+
+    const points = calcWinRatePoints();
+    if (points.length===0 || points.every(v=>v===0)){
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("勝ち負けの対戦がまだありません", 10, height/2);
       return;
     }
 
-    slumpChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "スランプ",
-          data,
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 8 } }
-        }
+    const maxVal = Math.max(...points,100);
+    const minVal = 0;
+    const range = Math.max(maxVal-minVal,1);
+
+    const padding = 32;
+    const usableW = width - padding*2;
+    const usableH = height - padding*2;
+
+    ctx.fillStyle = "#f9fafb";
+    ctx.fillRect(padding,padding,usableW,usableH);
+
+    const levels = [0,25,50,75,100];
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#6b7280";
+    levels.forEach(lv=>{
+      const ratio = (lv-minVal)/range;
+      const y = padding + usableH*(1-ratio);
+      if (lv===50){
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "#4b5563";
+        ctx.lineWidth = 3;
+      } else {
+        ctx.setLineDash([4,4]);
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1;
       }
+      ctx.beginPath();
+      ctx.moveTo(padding,y);
+      ctx.lineTo(width-padding,y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillText(lv+"%", 4, y+3);
     });
-  }
 
-  function groupByDate(matches) {
-    const map = new Map();
-    matches.forEach(m => {
-      const date = m.date;
-      if (!date) return;
-      if (!map.has(date)) {
-        map.set(date, { date, win: 0, lose: 0, draw: 0 });
-      }
-      const row = map.get(date);
-      if (m.result === "win") row.win++;
-      else if (m.result === "lose") row.lose++;
-      else row.draw++;
-    });
-    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  function groupByHour(matches) {
-    const map = new Map();
-    matches.forEach(m => {
-      if (!m.id) return;
-      const d = new Date(m.id);
-      if (isNaN(d.getTime())) return;
-      const hour = d.getHours();
-      if (!map.has(hour)) {
-        map.set(hour, { hour, win: 0, lose: 0, draw: 0 });
-      }
-      const row = map.get(hour);
-      if (m.result === "win") row.win++;
-      else if (m.result === "lose") row.lose++;
-      else row.draw++;
-    });
-    return Array.from(map.values()).sort((a, b) => a.hour - b.hour);
-  }
-
-  function createStatsRow(labelText, summaryText, winRate) {
-    const row = document.createElement("div");
-    row.className = "stats-row";
-
-    const header = document.createElement("div");
-    header.className = "stats-row-header";
-
-    const label = document.createElement("div");
-    label.className = "stats-label";
-    label.textContent = labelText;
-
-    const summary = document.createElement("div");
-    summary.className = "stats-summary";
-    summary.textContent = summaryText;
-
-    header.appendChild(label);
-    header.appendChild(summary);
-
-    const barWrapper = document.createElement("div");
-    barWrapper.className = "stats-bar-wrapper";
-
-    const barFill = document.createElement("div");
-    barFill.className = "stats-bar-fill";
-    const safeRate = Math.max(0, Math.min(100, winRate));
-    barFill.style.width = safeRate.toFixed(1) + "%";
-
-    barWrapper.appendChild(barFill);
-
-    const percent = document.createElement("div");
-    percent.className = "stats-bar-percent";
-    percent.textContent = safeRate.toFixed(1) + "%";
-
-    row.appendChild(header);
-    row.appendChild(barWrapper);
-    row.appendChild(percent);
-
-    return row;
-  }
-
-  function renderDailyWinrate(matches) {
-    const container = document.getElementById("daily-winrate-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const list = groupByDate(matches);
-    if (!list.length) {
-      container.textContent = "まだデータがありません。対戦を記録してください。";
-      return;
+    function pointToXY(idx,v){
+      const ratio = points.length===1?0.5:idx/(points.length-1);
+      const x = padding + usableW*ratio;
+      const yRatio = (v-minVal)/range;
+      const y = padding + usableH*(1-yRatio);
+      return {x,y};
     }
 
-    list.forEach(row => {
-      const total = row.win + row.lose + row.draw;
-      const rate = calcWinRate(row.win, row.lose);
-      const summary =
-        `${total}戦｜勝${row.win} / 負${row.lose}` +
-        (row.draw ? ` / 分${row.draw}` : "");
-
-      const el = createStatsRow(row.date, summary, rate);
-      container.appendChild(el);
-    });
-  }
-
-  function renderHourlyWinrate(matches) {
-    const container = document.getElementById("hourly-winrate-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const list = groupByHour(matches);
-    if (!list.length) {
-      container.textContent = "まだデータがありません。対戦を記録してください。";
-      return;
+    ctx.lineWidth = 2;
+    for (let i=1;i<points.length;i++){
+      const v1=points[i-1];
+      const v2=points[i];
+      const {x:x1,y:y1} = pointToXY(i-1,v1);
+      const {x:x2,y:y2} = pointToXY(i,v2);
+      const avg = (v1+v2)/2;
+      ctx.strokeStyle = avg>=50 ? "#2563eb" : "#dc2626";
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.stroke();
     }
 
-    list.forEach(row => {
-      const total = row.win + row.lose + row.draw;
-      const rate = calcWinRate(row.win, row.lose);
-      const label = `${row.hour}時台`;
-      const summary =
-        `${total}戦｜勝${row.win} / 負${row.lose}` +
-        (row.draw ? ` / 分${row.draw}` : "");
+    points.forEach((v,i)=>{
+      const {x,y} = pointToXY(i,v);
+      ctx.beginPath();
+      ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle = v>=50 ? "#2563eb" : "#dc2626";
+      ctx.fill();
+    });
 
-      const el = createStatsRow(label, summary, rate);
-      container.appendChild(el);
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "10px -apple-system, BlinkMacSystemFont, sans-serif";
+    points.forEach((v,i)=>{
+      const {x} = pointToXY(i,v);
+      ctx.fillText(String(i+1), x-3, height-5);
     });
   }
 
-  function renderOrderSummary(matches) {
-    const container = document.getElementById("order-summary-container");
-    if (!container) return;
-    container.innerHTML = "";
+  // デッキ名は空でもOK
+  function addRecord() {
+    const date = document.getElementById("dateInput").value;
+    const myDeck = document.getElementById("myDeckInput").value.trim();
+    const opponentDeck = document.getElementById("opponentDeckInput").value.trim();
+    const type = document.getElementById("typeInput").value;
+    const opponentType = document.getElementById("opponentTypeInput").value;
+    const result = document.getElementById("resultInput").value;
+    const order = document.getElementById("orderInput").value;
+    const memo = document.getElementById("memoInput").value.trim();
 
-    const stats = calcOrderStats(matches);
-    ["first", "second"].forEach(key => {
-      const row = stats[key];
-      const total = row.win + row.lose + row.draw;
-      const rate = calcWinRate(row.win, row.lose);
-      const label = row.label;
-      const summary =
-        `${total}戦｜勝${row.win} / 負${row.lose}` +
-        (row.draw ? ` / 分${row.draw}` : "");
+    if (editingId !== null) {
+      const idx = records.findIndex(r=>r.id===editingId);
+      if (idx!==-1){
+        records[idx] = {...records[idx], date,myDeck,opponentDeck,type,opponentType,result,order,memo};
+      }
+    } else {
+      const rec = {id:Date.now(),date,myDeck,opponentDeck,type,opponentType,result,order,memo};
+      records.push(rec);
+    }
 
-      const el = createStatsRow(label, summary, rate);
-      container.appendChild(el);
-    });
+    saveData();
+    editingId = null;
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を追加";
+    render();
+    clearForm();
   }
 
-  function renderMatchList() {
-    const tbody = document.getElementById("match-list-body");
-    if (!tbody) return;
+  function clearForm() {
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById("dateInput").value = today;
+    document.getElementById("myDeckInput").value = "";
+    document.getElementById("opponentDeckInput").value = "";
+    document.getElementById("myDeckPreset").value = "";
+    document.getElementById("opponentDeckPreset").value = "";
+    document.getElementById("typeInput").value = "";
+    document.getElementById("opponentTypeInput").value = "";
+    document.getElementById("resultInput").value = "win";
+    document.getElementById("orderInput").value = "first";
+    document.getElementById("memoInput").value = "";
+    editingId = null;
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を追加";
+    updateSelfPreview();
+    updateOpponentPreview();
+    updateResultColor();
+    document.getElementById("selfTypePanel").classList.remove("open");
+    document.getElementById("oppTypePanel").classList.remove("open");
+  }
+
+  function editRecord(id) {
+    const rec = records.find(r=>r.id===id);
+    if (!rec) return;
+    editingId = id;
+
+    document.getElementById("dateInput").value = rec.date || "";
+    document.getElementById("myDeckInput").value = rec.myDeck || "";
+    document.getElementById("opponentDeckInput").value = rec.opponentDeck || "";
+    document.getElementById("myDeckPreset").value = "";
+    document.getElementById("opponentDeckPreset").value = "";
+    document.getElementById("typeInput").value = rec.type || "";
+    document.getElementById("opponentTypeInput").value = rec.opponentType || "";
+    document.getElementById("resultInput").value = rec.result || "win";
+    document.getElementById("orderInput").value = rec.order || "first";
+    document.getElementById("memoInput").value = rec.memo || "";
+
+    updateSelfPreview();
+    updateOpponentPreview();
+    updateResultColor();
+    document.getElementById("selfTypePanel").classList.remove("open");
+    document.getElementById("oppTypePanel").classList.remove("open");
+
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.textContent = "記録を更新";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function deleteRecord(id) {
+    if (!confirm("この記録を削除しますか？")) return;
+    records = records.filter(r=>r.id!==id);
+    saveData();
+    clearForm();
+    render();
+  }
+
+  function clearAll() {
+    if (!confirm("すべての記録を削除しますか？")) return;
+    records = [];
+    saveData();
+    clearForm();
+    render();
+  }
+
+  // 対戦履歴テーブル（属性アイコン付き）
+  function renderTable() {
+    const tbody = document.querySelector("#recordsTable tbody");
     tbody.innerHTML = "";
+    if (records.length===0){
+      document.getElementById("countText").textContent="0件";
+      return;
+    }
+    const slumpMap = calcSlumpMap();
+    const sortedDesc = sortedByDateAsc().slice().reverse();
 
-    const sorted = [...matches].sort((a, b) => (b.id || 0) - (a.id || 0));
-
-    sorted.forEach((m, index) => {
+    sortedDesc.forEach(rec=>{
       const tr = document.createElement("tr");
 
-      const battleNumber = m.battleNumber || (sorted.length - index);
+      // 日付 + 何戦目
+      const tdDate=document.createElement("td");
+      tdDate.textContent = `${rec.battleNumber}戦目  ${formatDate(rec.date)}`;
 
-      const tdIdx = document.createElement("td");
-      tdIdx.textContent = battleNumber;
-      tr.appendChild(tdIdx);
+      // 自分のデッキ（属性アイコン付き）
+      const tdMy = createDeckCell(rec.myDeck, rec.type);
 
-      const tdDate = document.createElement("td");
-      tdDate.textContent = m.date || "";
+      // 相手のデッキ（属性アイコン付き）
+      const tdOpp = createDeckCell(rec.opponentDeck, rec.opponentType);
+
+      // 結果（勝ち／負け／分 + 先攻・後攻）
+      const tdRes=document.createElement("td");
+      tdRes.style.textAlign = "center";
+      const spanR=document.createElement("div");
+      spanR.textContent = resultLabel(rec.result);
+      spanR.className = resultClass(rec.result);
+      const spanO=document.createElement("div");
+      spanO.textContent = orderLabel(rec.order);
+      spanO.className = "tag-order";
+      tdRes.appendChild(spanR);
+      tdRes.appendChild(spanO);
+
+      // スランプ値
+      const tdSlump=document.createElement("td");
+      const v = slumpMap[rec.id] ?? 0;
+      const sign = v>0?"+":"";
+      tdSlump.textContent = sign+v;
+      tdSlump.className = v>0?"slump-plus":v<0?"slump-minus":"slump-zero";
+
+      // メモ
+      const tdMemo=document.createElement("td");
+      tdMemo.textContent = rec.memo || "";
+
+      // 編集・削除ボタン
+      const tdAct=document.createElement("td");
+      const editBtn=document.createElement("button");
+      editBtn.textContent="編集";
+      editBtn.className="btn-sub";
+      editBtn.style.fontSize="11px";
+      editBtn.style.marginRight="4px";
+      editBtn.onclick=()=>editRecord(rec.id);
+
+      const delBtn=document.createElement("button");
+      delBtn.textContent="削除";
+      delBtn.className="btn-sub";
+      delBtn.style.fontSize="11px";
+      delBtn.onclick=()=>deleteRecord(rec.id);
+
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(delBtn);
+
       tr.appendChild(tdDate);
-
-      const tdTime = document.createElement("td");
-      tdTime.textContent = formatTimeFromId(m.id);
-      tr.appendChild(tdTime);
-
-      const tdResult = document.createElement("td");
-      const spanRes = document.createElement("span");
-      if (m.result === "win") {
-        spanRes.textContent = "勝ち";
-        spanRes.className = "tag-win";
-      } else if (m.result === "lose") {
-        spanRes.textContent = "負け";
-        spanRes.className = "tag-lose";
-      } else {
-        spanRes.textContent = "分";
-        spanRes.className = "tag-draw";
-      }
-      tdResult.appendChild(spanRes);
-      tr.appendChild(tdResult);
-
-      const tdOrder = document.createElement("td");
-      const spanOrder = document.createElement("span");
-      spanOrder.className = "tag-order";
-      spanOrder.textContent = m.order === "first" ? "先行" : "後攻";
-      tdOrder.appendChild(spanOrder);
-      tr.appendChild(tdOrder);
-
-      const tdMy = document.createElement("td");
-      tdMy.textContent = m.myDeck || "";
       tr.appendChild(tdMy);
-
-      const tdOp = document.createElement("td");
-      tdOp.textContent = m.opponentDeck || "";
-      tr.appendChild(tdOp);
-
-      const tdType = document.createElement("td");
-      const typeParts = [];
-      if (m.type) typeParts.push("自:" + m.type);
-      if (m.opponentType) typeParts.push("相:" + m.opponentType);
-      tdType.textContent = typeParts.join(" / ");
-      tr.appendChild(tdType);
-
-      const tdMemo = document.createElement("td");
-      tdMemo.textContent = m.memo || "";
+      tr.appendChild(tdOpp);
+      tr.appendChild(tdRes);
+      tr.appendChild(tdSlump);
       tr.appendChild(tdMemo);
+      tr.appendChild(tdAct);
 
-      const tdDel = document.createElement("td");
-      const btnDel = document.createElement("button");
-      btnDel.className = "delete-btn";
-      btnDel.textContent = "削除";
-      btnDel.addEventListener("click", () => {
-        if (!confirm("この対戦を削除しますか？")) return;
-        matches = matches.filter(x => x.id !== m.id);
-        saveMatches();
-        renderAll();
-      });
-      tdDel.appendChild(btnDel);
-      tr.appendChild(tdDel);
+      tbody.appendChild(tr);
+    });
 
+    document.getElementById("countText").textContent=`${records.length}件`;
+  }
+
+  function renderDeckStats() {
+    const tbody=document.querySelector("#deckStatsTable tbody");
+    tbody.innerHTML="";
+    if (records.length===0) return;
+
+    const stats={};
+    records.forEach(r=>{
+      const key=(r.myDeck && r.myDeck.trim()) ? r.myDeck.trim() : "（名称未入力）";
+      if (!stats[key]) stats[key]={win:0,lose:0,draw:0,total:0};
+      stats[key].total++;
+      if (r.result==="win") stats[key].win++;
+      else if (r.result==="lose") stats[key].lose++;
+      else if (r.result==="draw") stats[key].draw++;
+    });
+
+    Object.keys(stats).sort().forEach(name=>{
+      const s=stats[name];
+      const battle=s.win+s.lose;
+      const rate=battle===0?0:(s.win/battle*100);
+
+      const tr=document.createElement("tr");
+      const tdName=document.createElement("td");
+      tdName.textContent=name;
+      const tdTotal=document.createElement("td");
+      tdTotal.textContent=s.total;
+      const tdW=document.createElement("td");
+      tdW.textContent=s.win;
+      const tdL=document.createElement("td");
+      tdL.textContent=s.lose;
+      const tdD=document.createElement("td");
+      tdD.textContent=s.draw;
+      const tdRate=document.createElement("td");
+      tdRate.textContent=rate.toFixed(1)+"%";
+
+      let color="#6b7280";
+      if (battle>0){
+        if (rate>=55) color="#2563eb";
+        else if (rate<=45) color="#dc2626";
+      }
+      tdRate.style.color=color;
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdTotal);
+      tr.appendChild(tdW);
+      tr.appendChild(tdL);
+      tr.appendChild(tdD);
+      tr.appendChild(tdRate);
       tbody.appendChild(tr);
     });
   }
 
-  function updateBackupTextarea() {
-    const textarea = document.getElementById("backup-textarea");
-    if (!textarea) return;
-    textarea.value = JSON.stringify(matches, null, 2);
+  function typeHeaderHTML(key){
+    const src=typeIconSrc(key);
+    const label=TYPE_LABEL[key]||"";
+    return `<img src="${src}" class="type-icon" alt="">${label}`;
   }
 
-  function showBackupMessage(msg, isError) {
-    const el = document.getElementById("backup-message");
-    if (!el) return;
-    el.textContent = msg;
-    el.style.color = isError ? "#b91c1c" : "#4b5563";
-  }
+  function renderTypeMatrix(){
+    const table=document.getElementById("typeMatrixTable");
+    if (!table) return;
 
-  function renderAll() {
-    renderOverallSummary();
-    renderSlumpChart();
-    renderDailyWinrate(matches);
-    renderHourlyWinrate(matches);
-    renderOrderSummary(matches);
-    renderMatchList();
-    updateBackupTextarea();
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const dateInput = document.getElementById("date-input");
-    const todayStr = new Date().toISOString().slice(0, 10);
-    if (dateInput) {
-      dateInput.value = todayStr;
+    if (records.length===0){
+      table.innerHTML="<tbody><tr><td class='muted'>まだデータがありません</td></tr></tbody>";
+      return;
     }
 
-    loadMatches();
-    renderAll();
+    const matrix={};
+    records.forEach(r=>{
+      const self=r.type;
+      const opp=r.opponentType;
+      if (!self || !opp) return;
+      const key=self+"|"+opp;
+      if (!matrix[key]) matrix[key]={win:0,lose:0,draw:0,total:0};
+      matrix[key].total++;
+      if (r.result==="win") matrix[key].win++;
+      else if (r.result==="lose") matrix[key].lose++;
+      else if (r.result==="draw") matrix[key].draw++;
+    });
 
-    const addBtn = document.getElementById("add-match-button");
-    addBtn?.addEventListener("click", () => {
-      const dateInput = document.getElementById("date-input");
-      const myDeckInput = document.getElementById("mydeck-input");
-      const opponentDeckInput = document.getElementById("opponentdeck-input");
-      const typeInput = document.getElementById("type-input");
-      const opponentTypeInput = document.getElementById("opponenttype-input");
-      const memoInput = document.getElementById("memo-input");
+    let html="<thead><tr><th>自＼相</th>";
+    TYPE_KEYS.forEach(k=>{ html+=`<th>${typeHeaderHTML(k)}</th>`; });
+    html+="</tr></thead><tbody>";
 
-      const date = dateInput.value || todayStr;
-      const myDeck = myDeckInput.value.trim();
-      const opponentDeck = opponentDeckInput.value.trim();
-      const type = typeInput.value;
-      const opponentType = opponentTypeInput.value;
-      const result = document.querySelector('input[name="result"]:checked')?.value || "win";
-      const order = document.querySelector('input[name="order"]:checked')?.value || "first";
+    TYPE_KEYS.forEach(selfKey=>{
+      html+="<tr>";
+      html+=`<th>${typeHeaderHTML(selfKey)}</th>`;
+      TYPE_KEYS.forEach(oppKey=>{
+        const key=selfKey+"|"+oppKey;
+        const cell=matrix[key];
+        if (!cell || cell.total===0){
+          html+="<td>－</td>";
+        } else {
+          const battle=cell.win+cell.lose;
+          const rate=battle===0?0:(cell.win/battle*100);
+          html+=`<td>${rate.toFixed(1)}%<br>(${cell.win}/${cell.total})</td>`;
+        }
+      });
+      html+="</tr>";
+    });
+    html+="</tbody>";
+    table.innerHTML=html;
+  }
 
-      const id = Date.now();
-      const battleNumber = (matches[matches.length - 1]?.battleNumber || matches.length) + 1;
+  function setRateColor(id, rate, hasBattle) {
+    const el=document.getElementById(id);
+    if (!el) return;
+    if (!hasBattle){
+      el.style.color="#6b7280";
+      return;
+    }
+    el.style.color = rate>=50 ? "#2563eb" : "#dc2626";
+  }
 
-      const match = {
-        id,
-        date,
-        myDeck,
-        opponentDeck,
-        type,
-        opponentType,
-        result,
-        order,
-        memo: memoInput.value.trim(),
-        battleNumber
+  function renderStats() {
+    const wins=records.filter(r=>r.result==="win").length;
+    const loses=records.filter(r=>r.result==="lose").length;
+    const draws=records.filter(r=>r.result==="draw").length;
+    const total=records.length;
+    const battle=wins+loses;
+    const winRate=battle===0?0:(wins/battle*100);
+
+    document.getElementById("totalText").textContent=`${total}戦`;
+    document.getElementById("wlText").textContent=`勝${wins} / 負${loses} / 分${draws}`;
+    document.getElementById("winRateText").textContent=winRate.toFixed(1)+"%";
+    setRateColor("winRateText", winRate, battle>0);
+
+    const first=records.filter(r=>r.order==="first");
+    const second=records.filter(r=>r.order==="second");
+    const fW=first.filter(r=>r.result==="win").length;
+    const fL=first.filter(r=>r.result==="lose").length;
+    const sW=second.filter(r=>r.result==="win").length;
+    const sL=second.filter(r=>r.result==="lose").length;
+    const fTotal=fW+fL;
+    const sTotal=sW+sL;
+    const fRate=fTotal===0?0:(fW/fTotal*100);
+    const sRate=sTotal===0?0:(sW/sTotal*100);
+
+    document.getElementById("firstRateText").textContent=fRate.toFixed(1)+"%";
+    document.getElementById("firstDetailText").textContent=`${fW}勝 ${fL}敗`;
+    document.getElementById("secondRateText").textContent=sRate.toFixed(1)+"%";
+    document.getElementById("secondDetailText").textContent=`${sW}勝 ${sL}敗`;
+
+    setRateColor("firstRateText", fRate, fTotal>0);
+    setRateColor("secondRateText", sRate, sTotal>0);
+  }
+
+  // 直近10戦サマリー
+  function renderRecentStats() {
+    const elTotal = document.getElementById("recentTotalText");
+    const elWL = document.getElementById("recentWLText");
+    const elRate = document.getElementById("recentWinRateText");
+    const elFS = document.getElementById("recentFirstSecondText");
+    if (!elTotal || !elWL || !elRate || !elFS) return;
+
+    if (records.length === 0) {
+      elTotal.textContent = "0戦";
+      elWL.textContent = "勝0 / 負0 / 分0";
+      elRate.textContent = "0.0%";
+      elRate.style.color = "#6b7280";
+      elFS.textContent = "先攻: 0勝0敗 / 後攻: 0勝0敗";
+      return;
+    }
+
+    const recent = getRecentRecords(10);
+    const wins = recent.filter(r=>r.result==="win").length;
+    const loses = recent.filter(r=>r.result==="lose").length;
+    const draws = recent.filter(r=>r.result==="draw").length;
+    const total = recent.length;
+    const battle = wins + loses;
+    const winRate = battle===0?0:(wins/battle*100);
+
+    elTotal.textContent = `${total}戦`;
+    elWL.textContent = `勝${wins} / 負${loses} / 分${draws}`;
+    elRate.textContent = winRate.toFixed(1) + "%";
+    setRateColor("recentWinRateText", winRate, battle>0);
+
+    const first = recent.filter(r=>r.order==="first");
+    const second = recent.filter(r=>r.order==="second");
+    const fW = first.filter(r=>r.result==="win").length;
+    const fL = first.filter(r=>r.result==="lose").length;
+    const sW = second.filter(r=>r.result==="win").length;
+    const sL = second.filter(r=>r.result==="lose").length;
+    elFS.textContent = `先攻: ${fW}勝${fL}敗 / 後攻: ${sW}勝${sL}敗`;
+  }
+
+  function renderMyTypePie() {
+    const canvas = document.getElementById("myTypePie");
+    const legend = document.getElementById("myTypeLegend");
+    if (!canvas || !legend) return;
+    const ctx = canvas.getContext("2d");
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = 220;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const countMap = {};
+    TYPE_KEYS.forEach(k => countMap[k] = 0);
+    records.forEach(r => {
+      if (r.type && countMap.hasOwnProperty(r.type)) {
+        countMap[r.type]++;
+      }
+    });
+
+    const types = [];
+    const values = [];
+    Object.keys(countMap).forEach(k => {
+      if (countMap[k] > 0) {
+        types.push(k);
+        values.push(countMap[k]);
+      }
+    });
+
+    if (values.length === 0) {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("まだデッキ属性のデータがありません", 10, canvas.height/2);
+      legend.innerHTML = "";
+      return;
+    }
+
+    const total = values.reduce((a,b)=>a+b,0);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 80;
+    const innerRadius = 45;
+
+    const colors = {
+      fire:      "#EF4444",
+      water:     "#3B82F6",
+      grass:     "#10B981",
+      lightning: "#FACC15",
+      psychic:   "#A855F7",
+      darkness:  "#111827",
+      fighting:  "#F97316",
+      metal:     "#6B7280",
+      colorless: "#D1D5DB"
+    };
+
+    let startAngle = -Math.PI/2;
+    types.forEach((t, idx) => {
+      const value = values[idx];
+      const angle = (value / total) * Math.PI * 2;
+      const endAngle = startAngle + angle;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = colors[t] || "#9CA3AF";
+      ctx.fill();
+
+      startAngle = endAngle;
+    });
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    ctx.fillStyle = "#374151";
+    ctx.font = "bold 14px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${total}戦`, centerX, centerY);
+
+    legend.innerHTML = "";
+    types.forEach((t, idx) => {
+      const value = values[idx];
+      const percent = (value/total*100).toFixed(1);
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "4px";
+
+      const colorBox = document.createElement("div");
+      colorBox.style.width = "12px";
+      colorBox.style.height = "12px";
+      colorBox.style.borderRadius = "3px";
+      colorBox.style.marginRight = "6px";
+      colorBox.style.backgroundColor = colors[t] || "#9CA3AF";
+
+      const icon = document.createElement("img");
+      icon.src = typeIconSrc(t);
+      icon.alt = "";
+      icon.className = "type-icon";
+      icon.style.width = "18px";
+      icon.style.height = "18px";
+      icon.style.marginRight = "4px";
+
+      const text = document.createElement("span");
+      text.textContent = `${TYPE_LABEL[t]}：${value}回（${percent}%）`;
+
+      row.appendChild(colorBox);
+      row.appendChild(icon);
+      row.appendChild(text);
+      legend.appendChild(row);
+    });
+  }
+
+  // AIおすすめ（デッキ＋属性）
+  function renderAIDeckSuggestion() {
+    const el = document.getElementById("aiDeckMessage");
+    if (!el) return;
+
+    if (records.length === 0) {
+      el.textContent = "まだデータが少ないため予想できません。まずは対戦を記録しましょう。";
+      el.style.color = "#6b7280";
+      return;
+    }
+
+    // デッキ名ごとの統計
+    const stats = {};
+    records.forEach(r => {
+      const key = (r.myDeck && r.myDeck.trim()) ? r.myDeck.trim() : "（名称未入力）";
+      if (!stats[key]) stats[key] = {win:0, lose:0, draw:0, total:0};
+      stats[key].total++;
+      if (r.result === "win") stats[key].win++;
+      else if (r.result === "lose") stats[key].lose++;
+      else if (r.result === "draw") stats[key].draw++;
+    });
+
+    let bestName = null;
+    let bestRate = 0;
+    let bestTotal = 0;
+
+    Object.keys(stats).forEach(name => {
+      const s = stats[name];
+      const battle = s.win + s.lose;
+      if (battle < 5) return;
+      const rate = battle === 0 ? 0 : s.win / battle * 100;
+      if (rate > bestRate || (rate === bestRate && battle > bestTotal)) {
+        bestRate = rate;
+        bestName = name;
+        bestTotal = battle;
+      }
+    });
+
+    // 属性ごとの統計
+    const typeStats = {};
+    records.forEach(r => {
+      if (!r.type) return;
+      const key = r.type;
+      if (!typeStats[key]) typeStats[key] = {win:0, lose:0, draw:0, total:0};
+      typeStats[key].total++;
+      if (r.result === "win") typeStats[key].win++;
+      else if (r.result === "lose") typeStats[key].lose++;
+      else if (r.result === "draw") typeStats[key].draw++;
+    });
+
+    let bestType = null;
+    let bestTypeRate = 0;
+    let bestTypeTotal = 0;
+
+    Object.keys(typeStats).forEach(typeKey => {
+      const s = typeStats[typeKey];
+      const battle = s.win + s.lose;
+      if (battle < 5) return;
+      const rate = battle === 0 ? 0 : s.win / battle * 100;
+      if (rate > bestTypeRate || (rate === bestTypeRate && battle > bestTypeTotal)) {
+        bestType = typeKey;
+        bestTypeRate = rate;
+        bestTypeTotal = battle;
+      }
+    });
+
+    if (!bestName && !bestType) {
+      el.textContent = "まだ対戦数が少ないため、はっきりしたおすすめデッキは出せません。各デッキ・属性で5戦以上データを貯めてみましょう。";
+      el.style.color = "#6b7280";
+      return;
+    }
+
+    let msg = "";
+    let baseRate = 0;
+
+    if (bestName) {
+      const s = stats[bestName];
+      msg +=
+        `次に勝てそうなデッキは「${bestName}」です。勝率は約 ${bestRate.toFixed(1)}％` +
+        `（${s.win}勝／${s.win + s.lose}戦、引き分け ${s.draw}）です。`;
+      baseRate = bestRate;
+    }
+
+    if (bestType) {
+      const st = typeStats[bestType];
+      const label = TYPE_LABEL[bestType] || bestType;
+      const battle = st.win + st.lose;
+      const typeMsg =
+        `属性だけで見ると「${label}」デッキが好調で、勝率は約 ${bestTypeRate.toFixed(1)}％` +
+        `（${st.win}勝／${battle}戦、引き分け ${st.draw}）です。`;
+      if (msg) {
+        msg += "<br>" + typeMsg;
+      } else {
+        msg = typeMsg;
+        baseRate = bestTypeRate;
+      }
+    }
+
+    el.innerHTML = msg;
+
+    if (baseRate >= 60) {
+      el.style.color = "#2563eb";
+    } else if (baseRate <= 45) {
+      el.style.color = "#dc2626";
+    } else {
+      el.style.color = "#16a34a";
+    }
+  }
+
+  function backupData() {
+    if (!records.length) {
+      alert("バックアップするデータがありません。");
+      return;
+    }
+    const data = JSON.stringify(records, null, 2);
+    const blob = new Blob([data], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = ("0"+(now.getMonth()+1)).slice(-2);
+    const d = ("0"+now.getDate()).slice(-2);
+    const hh = ("0"+now.getHours()).slice(-2);
+    const mm = ("0"+now.getMinutes()).slice(-2);
+    const ss = ("0"+now.getSeconds()).slice(-2);
+    a.download = `pokepoke_backup_${y}${m}${d}_${hh}${mm}${ss}.json`;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function restoreData() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const loaded = JSON.parse(reader.result);
+          if (!Array.isArray(loaded)) throw new Error("不正な形式");
+          records = loaded;
+          saveData();
+          render();
+          alert("バックアップから復元しました。");
+        } catch (err) {
+          alert("復元に失敗しました。ファイル形式を確認してください。");
+        }
       };
+      reader.readAsText(file, "utf-8");
+    };
+    input.click();
+  }
 
-      matches.push(match);
-      saveMatches();
-      renderAll();
+  function render() {
+    renderTable();
+    renderStats();
+    renderRecentStats();   // 直近10戦
+    renderWinRateGraph();
+    renderSlumpGraph();
+    renderDeckStats();
+    renderTypeMatrix();
+    renderDeckPresets();
+    renderMyTypePie();
+    renderAIDeckSuggestion();
+  }
 
-      memoInput.value = "";
-    });
+  function updateResultColor() {
+    const sel=document.getElementById("resultInput");
+    if (!sel) return;
+    let color="#6b7280";
+    if (sel.value==="win") color="#1d4ed8";
+    else if (sel.value==="lose") color="#b91c1c";
+    sel.style.color=color;
+  }
 
-    const copyBtn = document.getElementById("backup-copy-button");
-    copyBtn?.addEventListener("click", async () => {
-      const textarea = document.getElementById("backup-textarea");
-      textarea.select();
-      try {
-        await navigator.clipboard.writeText(textarea.value);
-        showBackupMessage("クリップボードにコピーしました。", false);
-      } catch (e) {
-        showBackupMessage("コピーに失敗しました…。手動でコピーしてください。", true);
-      }
-    });
-
-    const restoreBtn = document.getElementById("backup-restore-button");
-    restoreBtn?.addEventListener("click", () => {
-      const textarea = document.getElementById("backup-textarea");
-      if (!textarea.value.trim()) {
-        showBackupMessage("JSONが空です。貼り付けてから実行してください。", true);
-        return;
-      }
-      if (!confirm("貼り付けられたJSONでデータを上書きします。よろしいですか？")) return;
-
-      try {
-        const parsed = JSON.parse(textarea.value);
-        if (!Array.isArray(parsed)) throw new Error("配列ではありません");
-        matches = parsed;
-        saveMatches();
-        renderAll();
-        showBackupMessage("復元しました。", false);
-      } catch (e) {
-        console.error(e);
-        showBackupMessage("JSONの形式がおかしいようです。", true);
-      }
-    });
-
-    const clearBtn = document.getElementById("backup-clear-button");
-    clearBtn?.addEventListener("click", () => {
-      if (!confirm("本当に全データを削除しますか？")) return;
-      matches = [];
-      saveMatches();
-      renderAll();
-      showBackupMessage("全データを削除しました。", false);
-    });
+  loadData();
+  window.addEventListener("load",()=>{
+    const today=new Date().toISOString().slice(0,10);
+    const dateInput=document.getElementById("dateInput");
+    if (dateInput) dateInput.value=today;
+    updateSelfPreview();
+    updateOpponentPreview();
+    updateResultColor();
+    render();
   });
 </script>
 </body>
